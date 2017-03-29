@@ -10,6 +10,8 @@ rule token = parse    (* la "fonction" aussi s'appelle token *)
   | "let" { LET }
   | "=" { EQ }
   | "in" { IN }
+  | "("  {POPEN}
+  | ")"  {PCLOSE}
   | "+" { PLUS }
   | ['1'-'9']['0'-'9']* as s {VALUE (int_of_string s)}
   | ['a'-'z']['a'-'z']* as v {IDENT (v) }
