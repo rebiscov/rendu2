@@ -4,17 +4,14 @@
 exception Eof;;
 }
 
-rule token = parse    (* la "fonction" aussi s'appelle token .. *)
+rule token = parse    (* la "fonction" aussi s'appelle token *)
   | [' ' '\t' '\n'] { token lexbuf }
   | ";;" { EOP }
   | "let" { LET }
+  | "=" { EQ }
   | "in" { IN }
-  | "print" { PRINT }
   | "+" { PLUS }
-  | "*" { MULT }
-  | ['1'-'9']['0'-'9']* as s {VAR (int_of_string s)}
-  | ['a'-'z']['a'-'z']* as v {VAR (v) }
-  | '(' {BLOCKSTART}
-  | ')' {BLOCKEND}
+  | ['1'-'9']['0'-'9']* as s {VALUE (int_of_string s)}
+  | ['a'-'z']['a'-'z']* as v {IDENT (v) }
   | eof { raise Eof}
 
