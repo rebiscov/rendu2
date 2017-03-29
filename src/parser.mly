@@ -34,6 +34,7 @@ main:                       /* <- le point d'entrée (cf. + haut, "start") */
 
 prog:			    /* règles de grammaire pour les expressions */
   | LET IDENT EQ prog IN prog                  { Let($2,$4,$6)  }
+  | LET IDENT IDENT EQ prog IN prog    		   { Let($2,Fun($3,$5),$7) }
   | prog PLUS prog          { Plus($1,$3) }
   | IDENT { Id($1) }
   | VALUE { Value($1) }
