@@ -7,6 +7,7 @@ type ident = string
 type prog = 
 	| App of prog*prog
 	| Fun of ident*prog
+	| Recfun of ident*prog
 	| Let of ident*prog*prog
 	| Value of int
 	| Plus of prog*prog      (* /!\ Plus, Mult and Print must fail if the prog is a function of arity > 1 *)
@@ -31,6 +32,9 @@ let rec print_prog' p =
 						print_prog' p2;
 						printf ")"
 	| Fun(id,p1) 	->	printf "Fun(%s," id;
+						print_prog' p1;
+						printf ")"
+	| Recfun(id,p1) -> 	printf "Recfun(%s," id;
 						print_prog' p1;
 						printf ")"
 	| App(p1,p2)	-> 	printf "App(";

@@ -8,6 +8,7 @@ rule token = parse    (* la "fonction" aussi s'appelle token *)
   | [' ' '\t' '\n'] { token lexbuf }
   | ";;" { EOP }
   | "let" { LET }
+  | "rec" { REC }
   | "=" { EQ }
   | "in" { IN }
   | "("  {POPEN}
