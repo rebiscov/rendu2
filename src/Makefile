@@ -14,4 +14,5 @@ clean:
 	rm *.cm*
 	rm *.o
 	rm a.out
+	rm main.native
 
