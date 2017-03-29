@@ -1,7 +1,13 @@
+all:
+	ocamlbuild -yaccflag -v -lib unix main.native
+
 vincent:
 	ocamlopt prog.ml
 	ocamlc interpreter.mli
 	ocamlopt interpreter.ml
+
+
+
 
 clean:
 	rm *.cm*
