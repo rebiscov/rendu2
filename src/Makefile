@@ -10,6 +10,8 @@ vincent:
 
 
 clean:
+	rm -R _build
 	rm *.cm*
 	rm *.o
 	rm a.out
+
