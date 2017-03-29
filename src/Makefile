@@ -8,11 +8,12 @@ vincent:
 
 
 
-
 clean:
 	rm -R _build
+	rm maine.native
+
+clean_v:
 	rm *.cm*
 	rm *.o
 	rm a.out
-	rm main.native
 

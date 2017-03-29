@@ -20,7 +20,5 @@ let rec interpreter = fun prg ->
                             | _ -> failwith("Not a valid addition") end
   | Value(a) -> Value(a)
   | Id(ident) -> Hashtbl.find env ident
-                 
-
   | _ -> failwith("Not supported yet");;
 
