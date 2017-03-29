@@ -10,7 +10,7 @@ vincent:
 
 clean:
 	rm -R _build
-	rm maine.native
+	rm main.native
 
 clean_v:
 	rm *.cm*
