@@ -13,5 +13,6 @@ let rec interpreter = fun prg ->
                             | (Value(a), Value(b)) -> Value(a+b)
                             | _ -> failwith("Not a valid addition") end
   | Value(a) -> Value(a)
+  | Var(ident) -> 
   | _ -> failwith("Not supported yet");;
 

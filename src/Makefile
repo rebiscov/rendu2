@@ -1,4 +1,4 @@
-all:
+vincent:
 	ocamlopt prog.ml
 	ocamlc interpreter.mli
 	ocamlopt interpreter.ml
