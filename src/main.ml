@@ -14,7 +14,7 @@ let main () =
     if Sys.argv.(i) = "--interpreter" then inter := true
     else ()
   done;
-  if !inter then let prog = parse() in print_prog prog; print_prog (interpreter prog (Hashtbl.create 1000))
+  if !inter then let prog = parse() in print_prog prog; print_prog (interpreter prog env)
   else let prog = parse() in
        print_prog prog;;
 
