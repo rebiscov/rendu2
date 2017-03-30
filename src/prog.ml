@@ -5,14 +5,14 @@ type ident = string
 
 
 type prog = 
-	| App of prog*prog
-	| Fun of ident*prog
+	| App of prog*prog (* Application of a function *)
+	| Fun of ident*prog (* Declaration of a function *)
 	| Let of ident*prog*prog
 	| Value of int
 	| Plus of prog*prog      (* /!\ Plus, Mult and Print must fail if the prog is a function of arity > 1 *)
 	| Mult of prog*prog
 	| Print of prog
-    | Id of ident;;
+	| Id of ident;;
 
 
 let print_prog p = 
