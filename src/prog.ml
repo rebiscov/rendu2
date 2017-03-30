@@ -4,7 +4,8 @@ open Printf
 type ident = string
 
 
-type prog = 
+type prog =
+	| Unit
 	| App of prog*prog
 	| Fun of ident*prog
 	| Recfun of ident*prog

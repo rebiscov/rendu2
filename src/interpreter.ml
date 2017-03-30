@@ -4,24 +4,31 @@ open Printf
 
 type expr =
   | Var of prog
-  | Fun of prog * ident * (ident, expr)Hashtbl.t;;
+  | Fun of prog * ident list * (ident, expr)Hashtbl.t;;
    
 let env: (ident, expr) Hashtbl.t = Hashtbl.create 1000;;
 
-   
+let rec list_id_fun prg =
+  match prg with
+  | Let(name, Fun(id, prg1), prg2) -> id::list_id_fun prg1
+  | Fun(id, prg') -> id::list_id_fun prg'
+  | _ -> [];;
+  
 let rec interpreter prg env =
   match prg with
   | Let(name, Fun(id, prg1), prg2) -> begin try
-                                          Hashtbl.add env name (Fun(prg1, id, env));
+                                          let list_id = list_id_fun Fun(id, prg1) in
+                                          Hashtbl.add env name (Fun(prg1, list_id, env));
                                           let prg' = interpreter prg2 env in Hashtbl.remove env name; prg'
                                         with
-                                        | Not_found -> printf "The key %s is not present in the hashtable\n" name; exit 1
+                                        | Not_found -> printf "Let function:the key %s is not present in the hashtable\n" name; exit 1
                                         | e ->  printf "Unknown error in interpreter: Let fun definition: %s\n" (Printexc.to_string e); exit 1 end
+
   | Let(name, prg1, prg2) -> begin try
                                 Hashtbl.add env name (Var(interpreter prg1 env));
                                 let prg' = interpreter prg2 env in Hashtbl.remove env name; prg'
                            with
-                           | Not_found -> printf "The key %s is not present in the hashtable\n" name; exit 1
+                           | Not_found -> printf "Let variables:the key %s is not present in the hashtable\n" name; exit 1
                            | e -> printf "Unknown error in interpreter: Let definition: %s\n" (Printexc.to_string e); exit 1 end
                           
   | Plus(prg1, prg2) -> let prg1' = interpreter prg1 env in
@@ -42,10 +49,9 @@ let rec interpreter prg env =
         | Var(p) -> p
         | _ -> failwith("Id: not a variable")
       with
-      | Not_found -> printf "The key %s is not present in the hashtable\n" ident; exit 1
+      | Not_found -> printf "Id:the key %s is not present in the hashtable\n" ident; exit 1
       | e -> printf "Unknown error in interpreter Id: %s" (Printexc.to_string e); exit 1 end
 
-               
   | App(Id(id_fun), value) -> begin try
                                   let (f, id_value, env') = match Hashtbl.find env id_fun with Fun(f, id_value, env') -> (f, id_value, env') | _ -> failwith("Apply: not a function") in
                                   interpreter (Let(id_value, value, f)) env'
