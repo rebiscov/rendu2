@@ -6,14 +6,31 @@ exception Eof;;
 
 rule token = parse    (* la "fonction" aussi s'appelle token *)
   | [' ' '\t' '\n'] { token lexbuf }
+  (* end of prog *)
   | ";;" { EOP }
+  (* mots cles reserves *)
   | "let" { LET }
-  | "=" { EQ }
+  | "rec" { REC }
   | "in" { IN }
-  | "("  {POPEN}
-  | ")"  {PCLOSE}
+  | "if" { IF }
+  | "then" { THEN }
+  | "else" { ELSE }
+  (* comp operators *)
+  | ">=" 	{ INFEQ }
+  | ">"  	{ INF }
+  | "<"  	{ GRE }
+  | "<=" 	{ GREEQ }
+  | "=" 	{ EQ }
+  | "<>" 	{ NEQ }
+  (* delimiters *)
+  | "("  	{POPEN}
+  | ")"  	{PCLOSE}
+  (* binary ops *)
   | "+" { PLUS }
-  | ['1'-'9']['0'-'9']* as s {VALUE (int_of_string s)}
-  | ['a'-'z']['a'-'z']* as v {IDENT (v) }
+  | "*" { MULT }
+  | "-" { MINUS }
+  (* constants *)
+  | ['0'-'9']['0'-'9']* as s {VALUE (int_of_string s)}
+  | ['a'-'z' '_']['a'-'Z' '0'-'9' '_']* as v {IDENT (v) }
   | eof { raise Eof}
 
