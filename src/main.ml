@@ -3,6 +3,7 @@ open Sys
 open Printf
 open Interpreter
 
+let env: (ident, expr) Hashtbl.t = Hashtbl.create 1000;;
 let lexbuf  = Lexing.from_channel stdin;;
 let parse () = Parser.main Lexer.token lexbuf;;
   
