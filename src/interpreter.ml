@@ -4,21 +4,35 @@ open Printf
 
 type expr =
   | Var of prog
-  | Fun of prog * ident list * (ident, expr)Hashtbl.t;;
+  | Fun of prog * ident * (ident, expr)Hashtbl.t;;
    
 let env: (ident, expr) Hashtbl.t = Hashtbl.create 1000;;
 
-let rec list_id_fun prg =
+let rec get_prg prg =
   match prg with
-  | Let(name, Fun(id, prg1), prg2) -> id::list_id_fun prg1
-  | Fun(id, prg') -> id::list_id_fun prg'
-  | _ -> [];;
+  | Prog.Fun(x, prg') -> let (l, prg'') = get_prg prg' in (x::l, prg'')
+  | _ -> ([], prg);;
+
+let rec get_id prg =
+  match prg with
+  | App(Id(f), _) -> f
+  | App(x, _) -> get_id x
+  | _ -> Printf.printf "Can not find a ID for the application of the function\n"; exit 1;;
+
+let rec apply prg args env =
+  match args with
+  | [] -> ()
+  | a::r -> begin
+      match prg with
+      | App(x, prg') -> Hashtbl.add env a (Var(prg')); apply x r env
+      | _ -> Printf.printf "Problem in application, too many arguments are give to the function\n"; exit 1 end;;
+        
+
   
 let rec interpreter prg env =
   match prg with
   | Let(name, Fun(id, prg1), prg2) -> begin try
-                                          let list_id = list_id_fun Fun(id, prg1) in
-                                          Hashtbl.add env name (Fun(prg1, list_id, env));
+                                          Hashtbl.add env name (Fun(prg1, id, env));
                                           let prg' = interpreter prg2 env in Hashtbl.remove env name; prg'
                                         with
                                         | Not_found -> printf "Let function:the key %s is not present in the hashtable\n" name; exit 1
@@ -49,14 +63,14 @@ let rec interpreter prg env =
         | Var(p) -> p
         | _ -> failwith("Id: not a variable")
       with
-      | Not_found -> printf "Id:the key %s is not present in the hashtable\n" ident; exit 1
+      | Not_found -> printf "Id: the key %s is not present in the hashtable\n" ident; exit 1
       | e -> printf "Unknown error in interpreter Id: %s" (Printexc.to_string e); exit 1 end
 
-  | App(Id(id_fun), value) -> begin try
-                                  let (f, id_value, env') = match Hashtbl.find env id_fun with Fun(f, id_value, env') -> (f, id_value, env') | _ -> failwith("Apply: not a function") in
-                                  interpreter (Let(id_value, value, f)) env'
-                                with
-                                | Not_found -> printf "Can't find the function %s in the environment\n" id_fun; exit 1
-                                | e -> printf "Application failed: unknown error: %s\n" (Printexc.to_string e); exit 1 end
+  | App(x, value) -> let (f, env') = begin
+                     match (Hashtbl.find env (get_id prg)) with
+                     | Fun(f, _, env') -> (f, env')
+                     | _ -> Printf.printf "Not a function stored\n"; exit 1 end in
+                     let (args, f_prg) = get_prg f in
+                     apply f_prg args env'; interpreter f_prg env'
                
   | _ -> failwith("Not supported yet");;
