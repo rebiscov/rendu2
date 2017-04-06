@@ -13,18 +13,34 @@ open Prog   (* ou on definit le type expression *)
 %token EOP
 /* reserved words */
 %token LET REC IN IF THEN ELSE
-/* binary comp */
+
+/* comparison operators */
 %token NEQ EQ GREEQ GRE INF INFEQ
-/* binary op */
+
+/* binary operators */
 %token PLUS MINUS MULT
+
 /* delimiters */
 %token PCLOSE POPEN
 
+
+
+/* reserved words */
 %nonassoc EOP
 %nonassoc LET
 %nonassoc IN
-%nonassoc EQ
 %nonassoc IDENT
+%nonassoc IF
+%nonassoc THEN
+%nonassoc ELSE
+
+/* comparison operators */
+%nonassoc NEQ
+%nonassoc EQ
+%nonassoc GREEQ
+%nonassoc GRE
+%nonassoc INF
+%nonassoc INFEQ
 
 /* int operators are left assoc */
 %left PLUS
@@ -36,7 +52,7 @@ open Prog   (* ou on definit le type expression *)
 %start main 
 %type <Prog.prog> main     
 %%
-	
+
 main:                       
     prog EOP { $1 }  
 	
@@ -64,7 +80,7 @@ prog:
 /* fun and var definitions */  
 	| LET IDENT idents EQ prog IN prog 		   { Let($2,List.fold_left (fun p v-> Fun(v,p)) $5 $3, $7) } 
 	| LET REC IDENT idents EQ prog IN prog     { Let($3,List.fold_left (fun p v -> Recfun(v,p)) $6 $4, $8) }
-   
+   	| IF prog THEN prog ELSE prog 			   { If($2,$4,$6) }
   
 	| prog MULT prog			{ Mult($1,$3) }
 	| prog PLUS prog          { Plus($1,$3) }

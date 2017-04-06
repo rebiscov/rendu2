@@ -2,6 +2,16 @@ Projet 2
 
 # Rendu 2: La Fouine !
 
+## The merdz a faire (Julien)
+* implementer fun x -> ...
+* finir if then else
+* gerer les priorites d'operateurs (en particulier +,-,x)
+* gerer print et mettre sa priorite en top
+
+
+## The merdz a faire (Vincent)
+* verifier que quand une fonction non recursive s'apelle, ca plante
+
 ## Les merdes que j'ai faites:
 
 * les fonctions doivent marcher

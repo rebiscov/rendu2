@@ -18,8 +18,19 @@ type prog =
 	| Plus of prog*prog     
 	| Mult of prog*prog			(* not parsed yet *)
 	| Minus of prog*prog		(* not parsed yet *)
+	(* comparison operators *)
+	| Eq of prog*prog
+	| Neq of prog*prog
+	| Greater of prog*prog
+	| Greateq of prog*prog
+	| Smaller of prog*prog
+	| Smalleq of prog*prog
 	(* fun application *)
 	| App of prog*prog
+	(* if statement *)
+	(* compute prog1, if result is <> 0 then execute prog2 else execute prog3 *)
+	(* be careful, an error must be raised if the output of prog1 is not an int *)
+	| If of prog*prog*prog     
 	(* toolkit *)
 	| Print of prog
 ;;
@@ -68,6 +79,36 @@ let rec print_prog' p =
 						printf ",";
 						print_prog' p2;
 						printf ")"
+	| Eq(p1,p2)	->	printf "Eq(";
+						print_prog' p1;
+						printf ",";
+						print_prog' p2;
+						printf ")"
+	| Neq(p1,p2)	->	printf "Neq(";
+						print_prog' p1;
+						printf ",";
+						print_prog' p2;
+						printf ")"
+	| Greater(p1,p2)	->	printf "Greater(";
+						print_prog' p1;
+						printf ",";
+						print_prog' p2;
+						printf ")"
+	| Greateq(p1,p2)	->	printf "Greateq(";
+						print_prog' p1;
+						printf ",";
+						print_prog' p2;
+						printf ")"
+	| Smaller(p1,p2)	->	printf "Smaller(";
+						print_prog' p1;
+						printf ",";
+						print_prog' p2;
+						printf ")"
+	| Smalleq(p1,p2)	->	printf "Smalleq(";
+						print_prog' p1;
+						printf ",";
+						print_prog' p2;
+						printf ")"
 	| App(p1,p2)	-> 	printf "App(";
 						print_prog' p1;
 						printf ",";
@@ -75,6 +116,13 @@ let rec print_prog' p =
 						printf")"
 	| Print(p1)		-> 	printf "Print(";
 						print_prog' p1;
+						printf ")"
+	| If(cond,p1,p2) -> printf "If(";
+						print_prog' cond;
+						printf ",";
+						print_prog' p1;
+						printf ",";
+						print_prog' p2;
 						printf ")"
 	(* | _ -> printf "$not impl$" *)
 in
