@@ -25,7 +25,11 @@ open Prog   (* ou on definit le type expression *)
 %nonassoc IN
 %nonassoc EQ
 %nonassoc IDENT
+
+/* int operators are left assoc */
 %left PLUS
+%left MINUS
+%left MULT
 
 
 
@@ -42,25 +46,31 @@ idents:
 	| IDENT idents { $1 :: $2 }
 
 
-arg:
-	| VALUE { Value($1) }
-	| IDENT { Id($1) }
+/* here func is used as a general function: it can either be an arity 0 function (a constant) or a regular function */
+func:
+	| VALUE 			{ Value($1) }
+	| IDENT 			{ Id($1) }
 	| POPEN prog PCLOSE { $2 }
 
 /* phuncall huhuhu whatta joke */
 access:
-	| arg			{ $1 }
-	| access arg  { App($1,$2) }
+	| func			{ $1 }
+	| access func  { App($1,$2) }
 
 
 prog:
 /* delimiters */
 
 /* fun and var definitions */  
-  | LET IDENT idents EQ prog IN prog 		   { Let($2,List.fold_left (fun p v-> Fun(v,p)) $5 $3, $7) } 
-  | LET REC IDENT idents EQ prog IN prog     { Let($3,List.fold_left (fun p v -> Recfun(v,p)) $6 $4, $8) }
-  | prog PLUS prog          { Plus($1,$3) }
-  | access 	{ $1 }
+	| LET IDENT idents EQ prog IN prog 		   { Let($2,List.fold_left (fun p v-> Fun(v,p)) $5 $3, $7) } 
+	| LET REC IDENT idents EQ prog IN prog     { Let($3,List.fold_left (fun p v -> Recfun(v,p)) $6 $4, $8) }
+   
+  
+	| prog MULT prog			{ Mult($1,$3) }
+	| prog PLUS prog          { Plus($1,$3) }
+	| prog MINUS prog			{ Minus($1,$3) }
+	| MINUS prog				{ Minus(Value(0),$2) }
+	| access 	{ $1 }
 
 
 

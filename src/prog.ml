@@ -1,8 +1,8 @@
 open Printf
-
+;;
 
 type ident = string
-
+;;
 
 type prog =
 	(* do nothing type ... ???why do we need it???*)
@@ -12,7 +12,7 @@ type prog =
 	| Fun of ident*prog
 	| Recfun of ident*prog
 	(* access *)	
-	| Id of ident;;
+	| Id of ident
 	| Value of int
 	(* operators : must fail if the prog is a function of arity >= 1 *)	
 	| Plus of prog*prog     
@@ -25,7 +25,7 @@ type prog =
 ;;
 
 (* if i have time, can do a beauty printer of prog with line switches and indentation *)
-let print_tabs n = 
+let rec print_tabs n = 
 	match n with
 	| 0 -> ()
 	| _ -> 	printf "  "; 
@@ -76,7 +76,7 @@ let rec print_prog' p =
 	| Print(p1)		-> 	printf "Print(";
 						print_prog' p1;
 						printf ")"
-	| _ -> printf "$not impl$"
+	(* | _ -> printf "$not impl$" *)
 in
 print_prog' p;
 printf "\n";;
