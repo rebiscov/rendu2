@@ -4,7 +4,7 @@ open Printf
 
 type expr =
   | Var of prog
-  | Fun of prog * ident * (ident, expr)Hashtbl.t;;
+  | Func of prog * ident * (ident, expr)Hashtbl.t;;
    
 
 let rec get_prg prg = (* Get the prg of a function and the arguments*)
@@ -27,12 +27,35 @@ let rec apply prg args env = (* Add to the environment the arguments  *)
       | App(x, prg') -> Hashtbl.add env a (Var(prg')); Printf.printf "Added key %s to env\n" a ;apply x r env
       | _ -> Printf.printf "Problem in application, too many arguments are given to the function\n"; exit 1 end;;
         
+let make_cloture prg env =
+  let (args, prg_f) = get_prg prg in
+  let h = Hashtbl.create 10 in
+  let clot = Hashtbl.create 100 in
+  let rec list_args args =
+    match args with
+    | a::r -> if (not (Hashtbl.mem h a)) then (Hashtbl.add h a ()) else () ; list_args r
+    | _ -> () in
+  list_args args;
+  let rec add_clot prg =
+    match prg with
+    | Id(s) when not (Hashtbl.mem h s)-> 
+       if (Hashtbl.mem clot s) then 
+         begin Hashtbl.remove clot s; Hashtbl.add clot s (Hashtbl.find env s) end
+       else Hashtbl.add clot s (Hashtbl.find env s)
+    | Plus(a, b) | Mult(a, b) | Minus(a, b) | Eq(a, b) | Neq(a, b) | Greater(a, b) | Greateq(a, b) | Smaller(a, b) | Smalleq(a, b) | App(a, b) | Let(_, a, b)-> add_clot a; add_clot b
+    | If(a, b, c) -> add_clot a; add_clot b; add_clot c
+    | Print(a) | Recfun(_, a) | Fun(_, a) -> add_clot a
+    | _ -> () in
+  add_clot prg;
+  clot;;
 
   
 let rec interpreter prg env =
   match prg with
   | Let(name, Fun(id, prg1), prg2) -> begin try
-                                          Hashtbl.add env name (Fun(Prog.Fun(id,prg1), id, env)); (* Faire cloture deepcopy *)
+                                          let clot = make_cloture (Fun(id, prg1)) env in
+                                          Hashtbl.add clot name (Func(Prog.Fun(id, prg1), id, clot));
+                                          Hashtbl.add env name (Func(Prog.Fun(id,prg1), id, clot)); (* Faire cloture deepcopy *)
                                           let prg' = interpreter prg2 env in Hashtbl.remove env name; prg'
                                         with
                                         | Not_found -> printf "Let function:the key %s is not present in the hashtable\n" name; exit 1
@@ -68,7 +91,7 @@ let rec interpreter prg env =
 
   | App(x, value) -> let (f, env') = begin
                          match (Hashtbl.find env (get_id x)) with
-                         | Fun(f, _, env') -> (f, env')
+                         | Func(f, _, env') -> (f, env')
                          | _ -> Printf.printf "Not a function stored\n"; exit 1 end in
                      let (args, f_prg) = get_prg f in
                      let env'' = apply prg args env' in interpreter f_prg env''
