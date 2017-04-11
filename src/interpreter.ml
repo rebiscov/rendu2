@@ -46,6 +46,14 @@ let make_cloture prg env name debug =
   add_clot prg;
   clot;;
 
+let rec free args env debug = 
+  match args with
+  | [] -> ()
+  | a::r -> Hashtbl.remove env a;
+            if debug then Printf.printf "Deleted %s from the function clot\n" a;
+            free r env debug;;
+               
+  
 let rec apply prg args env debug = (* Add to the environment the arguments  *)
   match args with
   | [] -> env
@@ -137,7 +145,10 @@ and interpreter prg env debug =
                          | Func(f, env') -> (f, env')
                          | _ -> Printf.printf "Not a function stored\n"; exit 1 end in
                      let (args, f_prg) = get_prg f debug in
-                     let env'' = apply prg args env' debug in interpreter f_prg env'' debug
+                     let env'' = apply prg args env' debug in
+                     let out = interpreter f_prg env'' debug in
+                     free args env' debug;
+                     out
                                                             
   | If(prg1, prg2, prg3) -> if debug then Printf.printf "If then else\n";
                             if interpreter prg1 env debug = (Value(1)) then begin if debug then Printf.printf "In if\n"; interpreter prg2 env debug end
