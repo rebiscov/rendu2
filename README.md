@@ -2,6 +2,14 @@ Projet 2
 
 # Rendu 2: La Fouine !
 
+## Fonctionnalites
+
+## Testcases
+* operators.in -> priority of operators test :  print > any fun > * > + = -
+* 
+
+
+
 ## The merdz a faire (Julien)
 * implementer fun x -> ...
 * gerer les priorites d'operateurs (en particulier +,-,x)

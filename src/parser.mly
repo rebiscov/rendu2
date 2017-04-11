@@ -51,8 +51,7 @@ open Prog   (* ou on definit le type expression *)
 %nonassoc INFEQ
 
 /* important priorities */
-%left PLUS
-%left MINUS
+%left PLUS MINUS
 %left MULT
 %left PRINT
 
