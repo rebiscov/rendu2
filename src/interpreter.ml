@@ -9,11 +9,7 @@ type expr =
 
 let rec get_prg prg debug = (* Get the prg of a function and the arguments*)
   match prg with
-  | Prog.Fun(x, prg') -> 
-  	let (l, prg'') = get_prg prg' debug in 
-	if debug then 
-		Printf.printf "Added key %s to the arguments\n" x; 
-	(x::l, prg'')
+  | Prog.Fun(x, prg') -> let (l, prg'') = get_prg prg' debug in if debug then Printf.printf "Added key %s to the arguments\n" x; (x::l, prg'')
   | _ -> ([], prg);;
 
 let rec get_id prg = (* Get the id of a function  *)
@@ -119,11 +115,7 @@ and interpreter prg env debug =
                          | _ -> Printf.printf "Not a function stored\n"; exit 1 end in
                      let (args, f_prg) = get_prg f debug in
                      let env'' = apply prg args env' debug in interpreter f_prg env'' debug
-(*
-  | App(x, value) -> match Hashtbl.find env (get_id x)
-                         | Func(f,_,env') -> ...
-                         | Recfun(f,_,env') -> apply_rec f
- *)
+                                                            
   | If(prg1, prg2, prg3) -> if debug then Printf.printf "If then else\n";
                             if interpreter prg1 env debug = (Value(1)) then begin if debug then Printf.printf "In if\n"; interpreter prg2 env debug end
                             else begin Printf.printf "In else\n"; interpreter prg3 env debug end
