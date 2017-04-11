@@ -5,8 +5,6 @@ type ident = string
 ;;
 
 type prog =
-	(* do nothing type ... ???why do we need it???*)
-	| Unit
 	(* function definition *)
 	| Let of ident*prog*prog
 	| Fun of ident*prog

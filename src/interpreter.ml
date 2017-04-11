@@ -151,5 +151,10 @@ let rec interpreter prg env debug =
                 match (prga, prgb) with
                 | (Value(x), Value(y)) when x <= y -> if debug then Printf.printf "%d is smaller or equals than %d" x y; Value(1)
                 | _ -> Value(0) end                                              
-                     
+
+  | Print(prg') -> let prg'' = interpreter prg' env debug in begin
+                   match prg'' with 
+                   | Value(a) -> Printf.printf "prInt %d\n" a; prg''
+                   | _ -> failwith("prInt: not an integer !") end
+                                                    
   | _ -> failwith("Not supported yet");;
