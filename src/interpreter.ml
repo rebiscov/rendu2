@@ -4,7 +4,7 @@ open Printf
 
 type expr =
   | Var of prog
-  | Func of prog * ident * (ident, expr)Hashtbl.t;;
+  | Func of prog * (ident, expr)Hashtbl.t;;
    
 
 let rec get_prg prg debug = (* Get the prg of a function and the arguments*)
@@ -58,8 +58,8 @@ and interpreter prg env debug =
   | Let(name, Fun(id, prg1), prg2) -> begin try
                                           if debug then Printf.printf "Defining a function\n";
                                           let clot = make_cloture (Fun(id, prg1)) env name debug in
-                                          Hashtbl.add clot name (Func(Prog.Fun(id, prg1), id, clot));
-                                          Hashtbl.add env name (Func(Prog.Fun(id,prg1), id, clot));
+                                          Hashtbl.add clot name (Func(Prog.Fun(id, prg1),clot));
+                                          Hashtbl.add env name (Func(Prog.Fun(id,prg1), clot));
                                           if (debug) then Printf.printf "Adding function %s to the environment\n" name;
                                           let prg' = interpreter prg2 env debug in
                                           Hashtbl.remove env name; if debug then  Printf.printf "Deleting function %s name from the environment\n" name ;
@@ -111,7 +111,7 @@ and interpreter prg env debug =
   | App(x, value) -> if debug then begin Printf.printf "Application of function %s\n" (get_id x); print_prog value end;
                      let (f, env') = begin
                          match (Hashtbl.find env (get_id x)) with
-                         | Func(f, _, env') -> (f, env')
+                         | Func(f, env') -> (f, env')
                          | _ -> Printf.printf "Not a function stored\n"; exit 1 end in
                      let (args, f_prg) = get_prg f debug in
                      let env'' = apply prg args env' debug in interpreter f_prg env'' debug
