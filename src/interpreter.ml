@@ -40,7 +40,7 @@ let make_cloture prg env name debug =
        else Hashtbl.add clot s (Hashtbl.find env s)
     | Plus(a, b) | Mult(a, b) | Minus(a, b) | Eq(a, b) | Neq(a, b) | Greater(a, b) | Greateq(a, b) | Smaller(a, b) | Smalleq(a, b) | App(a, b) | Let(_, a, b)-> add_clot a; add_clot b
     | If(a, b, c) -> add_clot a; add_clot b; add_clot c
-    | Print(a) | Recfun(_, a) | Fun(_, a) -> add_clot a
+    | Recfun(_, a) | Fun(_, a) -> add_clot a
     | Id(_) | Value(_) -> ()
     | _ -> Printf.printf "prog = "; print_prog prg;Printf.printf "add_clot: prg not supported, it may cause problem later\n"; () in
   add_clot prg;
@@ -151,6 +151,13 @@ and interpreter prg env debug =
       | Not_found -> printf "Id: the key %s is not present in the hashtable\n" ident; exit 1
       | e -> printf "Unknown error in interpreter Id: %s" (Printexc.to_string e); exit 1 end
 
+  | App(Print, x) -> let prg' = interpreter x env debug in
+                     begin
+                       match prg' with
+                       | Value(a) -> Printf.printf "prInt %d\n" a; prg'
+                       | _ -> failwith("Print: not a value to print") end
+                     
+
   | App(x, value) -> if debug then begin Printf.printf "Application of function %s\n" (get_id x); print_prog value end;
                      let (f, env') = begin
                          match (Hashtbl.find env (get_id x)) with
@@ -204,10 +211,6 @@ and interpreter prg env debug =
                          | (Value(x), Value(y)) when x <= y -> if debug then Printf.printf "%d is smaller or equals than %d" x y; Value(1)
                          | _ -> Value(0) end                                              
 
-  | Print(prg') -> let prg'' = interpreter prg' env debug in begin
-                       match prg'' with 
-                       | Value(a) -> Printf.printf "prInt %d\n" a; prg''
-                       | _ -> failwith("prInt: not an integer !") end
 
                                                     
   | _ -> failwith("Not supported yet");;
