@@ -4,6 +4,7 @@ open Printf
 
 type expr =
   | Var of prog
+  | Ref of int ref 
   | Func of prog * (ident, expr)Hashtbl.t;;
    
 
@@ -65,8 +66,14 @@ and interpreter prg env debug =
                                           Hashtbl.remove env name; if debug then  Printf.printf "Deleting function %s name from the environment\n" name ;
                                           prg'
                                         with
-                                        | Not_found -> printf "Let function:the key %s is not present in the hashtable\n" name; exit 1
+                                        | Not_found -> printf "Let function: the key %s is not present in the hashtable\n" name; exit 1
                                         | e ->  printf "Unknown error in interpreter: Let fun definition: %s\n" (Printexc.to_string e); exit 1 end
+                                    
+  | Let(name, Ref(prg1), prg2) -> let prg1' = interpreter prg1 env debug in begin
+                                      match prg1' with 
+                                      | Value(a) -> let r = ref a in Hashtbl.add env name (Ref(r))
+                                      | _ -> failwith("You can't create a reference of a non int type !") end ;
+                                                                              interpreter prg2 env debug
 
   | Let(name, prg1, prg2) -> begin try
                                  if debug then Printf.printf "Defining a variable\n";
@@ -80,7 +87,23 @@ and interpreter prg env debug =
                                with
                                | Not_found -> printf "Let variables:the key %s is not present in the hashtable\n" name; exit 1
                                | e -> printf "Unknown error in interpreter: Let definition: %s\n" (Printexc.to_string e); exit 1 end
-                           
+
+  | Reassign(id, prg') -> let prg'' = interpreter prg' env debug in
+                          begin
+                            match prg'' with
+                            | Value(a) -> let r = ref a in
+                                          Hashtbl.remove env id;
+                                          Hashtbl.add env id (Ref(r))
+                            | _ -> failwith("Reassign: not a reference stored") end ;
+                          Unit
+                          
+  | Bang(id) -> begin                
+                  match (Hashtbl.find env id) with
+                  | Ref(r') -> Value(!r')
+                  | _ -> failwith("Not a reference stored")  end 
+                
+
+                                 
   | Plus(prg1, prg2) -> let prg1' = interpreter prg1 env debug in
                         let prg2' = interpreter prg2 env debug in begin
                             match (prg1', prg2') with
