@@ -5,8 +5,8 @@ Projet 2
 ## Fonctionnalites
 
 ## Testcases
-
-operateurs.in
+* operators.in -> priority of operators test :  print > any fun > * > + = -
+* 
 
 
 
