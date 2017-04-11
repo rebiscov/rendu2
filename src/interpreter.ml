@@ -73,6 +73,12 @@ let rec interpreter prg env =
                             match (prg1', prg2') with
                             | (Value(a), Value(b)) -> Value(a+b)
                             | _ -> failwith("Not a valid addition") end
+
+  | Minus(prg1, prg2) -> let prg1' = interpreter prg1 env in
+                        let prg2' = interpreter prg2 env in begin
+                            match (prg1', prg2') with
+                            | (Value(a), Value(b)) -> Value(a-b)
+                            | _ -> failwith("Not a valid addition") end                                                          
                                                       
   | Mult(prg1, prg2) -> let prg1' = interpreter prg1 env in
                         let prg2' = interpreter prg2 env in begin
@@ -95,5 +101,44 @@ let rec interpreter prg env =
                          | _ -> Printf.printf "Not a function stored\n"; exit 1 end in
                      let (args, f_prg) = get_prg f in
                      let env'' = apply prg args env' in interpreter f_prg env''
+
+  | If(prg1, prg2, prg3) -> if interpreter prg1 env = (Value(1)) then interpreter prg2 env
+                            else interpreter prg3 env
+
+  | Eq(a, b) -> let prga = interpreter a env in
+                let prgb = interpreter b env in begin
+                match (prga, prgb) with
+                | (Value(x), Value(y)) when x = y -> Value(1)
+                | _ -> Value(0) end
+                                              
+  | Neq(a, b) -> let prga = interpreter a env in
+                let prgb = interpreter b env in begin
+                match (prga, prgb) with
+                | (Value(x), Value(y)) when x <> y -> Value(1)
+                | _ -> Value(0) end
+
+  | Greater(a, b) -> let prga = interpreter a env in
+                let prgb = interpreter b env in begin
+                match (prga, prgb) with
+                | (Value(x), Value(y)) when x > y -> Value(1)
+                | _ -> Value(0) end
+
+  | Greateq(a, b) -> let prga = interpreter a env in
+                let prgb = interpreter b env in begin
+                match (prga, prgb) with
+                | (Value(x), Value(y)) when x >= y -> Value(1)
+                | _ -> Value(0) end
+
+  | Smaller(a, b) -> let prga = interpreter a env in
+                let prgb = interpreter b env in begin
+                match (prga, prgb) with
+                | (Value(x), Value(y)) when x < y -> Value(1)
+                | _ -> Value(0) end                                              
+
+  | Smalleq(a, b) -> let prga = interpreter a env in
+                let prgb = interpreter b env in begin
+                match (prga, prgb) with
+                | (Value(x), Value(y)) when x <= y -> Value(1)
+                | _ -> Value(0) end                                              
                      
   | _ -> failwith("Not supported yet");;
