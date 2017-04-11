@@ -15,6 +15,11 @@ rule token = parse    (* la "fonction" aussi s'appelle token *)
   | "if" { IF }
   | "then" { THEN }
   | "else" { ELSE }
+  | "print" { PRINT }
+  | "ref" 	{ REF }
+  (* reserved operators *)
+  | "!"		{ BANG }
+  | ":="	{ REASSIGN }
   (* comp operators *)
   | ">=" 	{ INFEQ }
   | ">"  	{ INF }

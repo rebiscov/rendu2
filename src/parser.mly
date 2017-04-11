@@ -12,8 +12,9 @@ open Prog   (* ou on definit le type expression *)
 %token <int> VALUE
 %token EOP
 /* reserved words */
-%token LET REC IN IF THEN ELSE
-
+%token LET REC IN IF THEN ELSE PRINT REF
+/* reserved operators */
+%token BANG REASSIGN
 /* comparison operators */
 %token NEQ EQ GREEQ GRE INF INFEQ
 
@@ -24,6 +25,7 @@ open Prog   (* ou on definit le type expression *)
 %token PCLOSE POPEN
 
 
+%nonassoc REF
 
 /* reserved words */
 %nonassoc EOP
@@ -34,6 +36,12 @@ open Prog   (* ou on definit le type expression *)
 %nonassoc THEN
 %nonassoc ELSE
 
+
+/* reference things */
+
+%nonassoc BANG
+%nonassoc REASSIGN
+
 /* comparison operators */
 %nonassoc NEQ
 %nonassoc EQ
@@ -42,10 +50,11 @@ open Prog   (* ou on definit le type expression *)
 %nonassoc INF
 %nonassoc INFEQ
 
-/* int operators are left assoc */
+/* important priorities */
 %left PLUS
 %left MINUS
 %left MULT
+%left PRINT
 
 
 
@@ -58,7 +67,7 @@ main:
 	
 
 idents:
-	| { [] }
+	| 			{ [] }
 	| IDENT idents { $1 :: $2 }
 
 
@@ -66,6 +75,7 @@ idents:
 func:
 	| VALUE 			{ Value($1) }
 	| IDENT 			{ Id($1) }
+	| BANG IDENT		{ Bang($2) }
 	| POPEN prog PCLOSE { $2 }
 
 /* phuncall huhuhu whatta joke */
@@ -73,30 +83,30 @@ access:
 	| func			{ $1 }
 	| access func  { App($1,$2) }
 
+comp:
+	| prog GREEQ prog 	{ Greateq($1,$3) }
+	| prog GRE prog 	{ Greater($1,$3) }
+	| prog INFEQ prog 	{ Smalleq($1,$3) }
+	| prog INF prog		{ Smaller($1,$3) }
+	| prog EQ prog		{ Eq($1,$3) }
+	| prog NEQ prog		{ Neq($1,$3) }
+
 
 prog:
 /* delimiters */
 
 /* fun and var definitions */  
-	| LET IDENT idents EQ prog IN prog 		   { Let($2,List.fold_left (fun p v-> Fun(v,p)) $5 $3, $7) } 
-	| LET REC IDENT idents EQ prog IN prog     { Let($3,List.fold_left (fun p v -> Recfun(v,p)) $6 $4, $8) }
-   	| IF prog THEN prog ELSE prog 			   { If($2,$4,$6) }
-  
-	| prog MULT prog			{ Mult($1,$3) }
-	| prog PLUS prog          { Plus($1,$3) }
-	| prog MINUS prog			{ Minus($1,$3) }
-	| MINUS prog				{ Minus(Value(0),$2) }
-	| access 	{ $1 }
-
-
-
-
-/*  | IDENT args { List.fold_left (fun f arg -> App(f,arg)) (Id($1)) $2 } */
-
-
-/* a shit lot of other shit */
-/*| IF a COMP b THEN p1 ELSE p2  { If(Comp($3),$2,$4,$6,$8) } */
-
+	| LET IDENT idents EQ prog IN prog 		   	{ Let($2,List.fold_left (fun p v-> Fun(v,p)) $5 $3, $7) } 
+	| LET REC IDENT idents EQ prog IN prog     	{ Let($3,List.fold_left (fun p v -> Recfun(v,p)) $6 $4, $8) }
+	| prog MULT prog							{ Mult($1,$3) }
+	| prog PLUS prog          					{ Plus($1,$3) }
+	| prog MINUS prog							{ Minus($1,$3) }
+	| MINUS prog								{ Minus(Value(0),$2) }
+	| access 									{ $1 }
+	| IDENT REASSIGN prog						{ Reassign($1,$3) }
+	| REF prog									{ Ref($2) }
+	| IF comp THEN prog ELSE prog  				{ If($2,$4,$6) }
+	| PRINT prog { Print($2) }
 ;
 
 

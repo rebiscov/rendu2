@@ -11,6 +11,10 @@ type prog =
 	| Let of ident*prog*prog
 	| Fun of ident*prog
 	| Recfun of ident*prog
+	(* references: *)
+	| Ref of prog
+	| Bang of ident
+	| Reassign of ident*prog
 	(* access *)	
 	| Id of ident
 	| Value of int
@@ -124,6 +128,16 @@ let rec print_prog' p =
 						printf ",";
 						print_prog' p2;
 						printf ")"
+	(* ref things *)
+	| Ref(p1) -> 		printf "Ref(";
+						print_prog' p1;
+						printf ")";
+	| Reassign(ident,p1) -> printf "Reassign(";
+						print_string ident;
+						printf ",";
+						print_prog' p1;
+						printf ")";
+	| Bang(ident) ->	printf "Bang(%s)" ident;
 	(* | _ -> printf "$not impl$" *)
 in
 print_prog' p;
