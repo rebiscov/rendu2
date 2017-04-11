@@ -19,13 +19,7 @@ let rec get_id prg = (* Get the id of a function  *)
   | Id(f) -> f
   | _ -> Printf.printf "Can not find a ID for the application of the function\n"; exit 1;;
 
-let rec apply prg args env debug = (* Add to the environment the arguments  *)
-  match args with
-  | [] -> env
-  | a::r -> begin
-      match prg with (* my shit *)
-      | App(x, prg') -> let pgr'' = interpreter prg' env debug in Hashtbl.add env a (Var(prg'')); if debug then Printf.printf "Added key %s to env\n" a ; apply x r env debug
-      | _ -> Printf.printf "Problem in application, too many arguments are given to the function\n"; exit 1 end;;
+
         
 let make_cloture prg env name debug =
   let (args, prg_f) = get_prg prg debug in
@@ -51,8 +45,15 @@ let make_cloture prg env name debug =
   add_clot prg;
   clot;;
 
+let rec apply prg args env debug = (* Add to the environment the arguments  *)
+  match args with
+  | [] -> env
+  | a::r -> begin
+      match prg with (* my shit *)
+      | App(x, prg') -> let prg'' = interpreter prg' env debug in Hashtbl.add env a (Var(prg'')); if debug then Printf.printf "Added key %s to env\n" a ; apply x r env debug
+      | _ -> Printf.printf "Problem in application, too many arguments are given to the function\n"; exit 1 end
   
-let rec interpreter prg env debug =
+and interpreter prg env debug =
   match prg with
   | Let(name, Fun(id, prg1), prg2) -> begin try
                                           if debug then Printf.printf "Defining a function\n";
@@ -63,7 +64,6 @@ let rec interpreter prg env debug =
                                           let prg' = interpreter prg2 env debug in
                                           Hashtbl.remove env name; if debug then  Printf.printf "Deleting function %s name from the environment\n" name ;
                                           prg'
-                                                                                   
                                         with
                                         | Not_found -> printf "Let function:the key %s is not present in the hashtable\n" name; exit 1
                                         | e ->  printf "Unknown error in interpreter: Let fun definition: %s\n" (Printexc.to_string e); exit 1 end
