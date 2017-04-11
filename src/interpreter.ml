@@ -9,7 +9,11 @@ type expr =
 
 let rec get_prg prg debug = (* Get the prg of a function and the arguments*)
   match prg with
-  | Prog.Fun(x, prg') -> let (l, prg'') = get_prg prg' debug in if debug then Printf.printf "Added key %s to the arguments\n" x; (x::l, prg'')
+  | Prog.Fun(x, prg') -> 
+  	let (l, prg'') = get_prg prg' debug in 
+	if debug then 
+		Printf.printf "Added key %s to the arguments\n" x; 
+	(x::l, prg'')
   | _ -> ([], prg);;
 
 let rec get_id prg = (* Get the id of a function  *)
