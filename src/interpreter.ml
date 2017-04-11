@@ -10,7 +10,7 @@ type expr =
 
 let rec get_prg prg debug = (* Get the prg of a function and the arguments*)
   match prg with
-  | Prog.Fun(x, prg') -> let (l, prg'') = get_prg prg' debug in if debug then Printf.printf "Added key %s to the arguments\n" x; (x::l, prg'')
+  | Prog.Fun(x, prg') | Prog.Recfun(x, prg') -> let (l, prg'') = get_prg prg' debug in if debug then Printf.printf "Added key %s to the arguments\n" x; (x::l, prg'')
   | _ -> ([], prg);;
 
 let rec get_id prg = (* Get the id of a function  *)
@@ -67,7 +67,6 @@ and interpreter prg env debug =
   | Let(name, Fun(id, prg1), prg2) -> begin try
                                           if debug then Printf.printf "Defining a function\n";
                                           let clot = make_cloture (Fun(id, prg1)) env name debug in
-                                          Hashtbl.add clot name (Func(Prog.Fun(id, prg1),clot));
                                           Hashtbl.add env name (Func(Prog.Fun(id,prg1), clot));
                                           if (debug) then Printf.printf "Adding function %s to the environment\n" name;
                                           let prg' = interpreter prg2 env debug in
@@ -76,6 +75,19 @@ and interpreter prg env debug =
                                         with
                                         | Not_found -> printf "Let function: the key %s is not present in the hashtable\n" name; exit 1
                                         | e ->  printf "Unknown error in interpreter: Let fun definition: %s\n" (Printexc.to_string e); exit 1 end
+
+  | Let(name, Recfun(id, prg1), prg2) -> begin try
+                                          if debug then Printf.printf "Defining a function\n";
+                                          let clot = make_cloture (Fun(id, prg1)) env name debug in
+                                          Hashtbl.add clot name (Func(Prog.Recfun(id, prg1),clot));
+                                          Hashtbl.add env name (Func(Prog.Recfun(id,prg1), clot));
+                                          if (debug) then Printf.printf "Adding function %s to the environment\n" name;
+                                          let prg' = interpreter prg2 env debug in
+                                          Hashtbl.remove env name; if debug then  Printf.printf "Deleting function %s name from the environment\n" name ;
+                                          prg'
+                                        with
+                                        | Not_found -> printf "Let function: the key %s is not present in the hashtable\n" name; exit 1
+                                        | e ->  printf "Unknown error in interpreter: Let fun definition: %s\n" (Printexc.to_string e); exit 1 end                                    
                                     
   | Let(name, Ref(prg1), prg2) -> let prg1' = interpreter prg1 env debug in begin
                                       match prg1' with 
@@ -152,7 +164,7 @@ and interpreter prg env debug =
                                                             
   | If(prg1, prg2, prg3) -> if debug then Printf.printf "If then else\n";
                             if interpreter prg1 env debug = (Value(1)) then begin if debug then Printf.printf "In if\n"; interpreter prg2 env debug end
-                            else begin Printf.printf "In else\n"; interpreter prg3 env debug end
+                            else begin if debug then Printf.printf "In else\n"; interpreter prg3 env debug end
 
   | Eq(a, b) -> let prga = interpreter a env debug in
                 let prgb = interpreter b env debug in begin
