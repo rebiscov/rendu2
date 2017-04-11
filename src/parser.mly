@@ -74,6 +74,7 @@ idents:
 func:
 	| VALUE 			{ Value($1) }
 	| IDENT 			{ Id($1) }
+	| PRINT				{ Print }
 	| BANG IDENT		{ Bang($2) }
 	| POPEN prog PCLOSE { $2 }
 
@@ -92,8 +93,6 @@ comp:
 
 
 prog:
-/* delimiters */
-
 /* fun and var definitions */  
 	| LET IDENT idents EQ prog IN prog 		   	{ Let($2,List.fold_left (fun p v-> Fun(v,p)) $5 $3, $7) } 
 	| LET REC IDENT idents EQ prog IN prog     	{ Let($3,List.fold_left (fun p v -> Recfun(v,p)) $6 $4, $8) }
@@ -105,7 +104,6 @@ prog:
 	| IDENT REASSIGN prog						{ Reassign($1,$3) }
 	| REF prog									{ Ref($2) }
 	| IF comp THEN prog ELSE prog  				{ If($2,$4,$6) }
-	| PRINT prog { Print($2) }
 ;
 
 

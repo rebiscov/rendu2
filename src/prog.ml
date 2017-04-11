@@ -36,7 +36,7 @@ type prog =
 	(* be careful, an error must be raised if the output of prog1 is not an int *)
 	| If of prog*prog*prog     
 	(* toolkit *)
-	| Print of prog
+	| Print
 ;;
 
 (* if i have time, can do a beauty printer of prog with line switches and indentation *)
@@ -118,9 +118,7 @@ let rec print_prog' p =
 						printf ",";
 						print_prog' p2;
 						printf")"
-	| Print(p1)		-> 	printf "Print(";
-						print_prog' p1;
-						printf ")"
+	| Print		-> 	printf "Print"
 	| If(cond,p1,p2) -> printf "If(";
 						print_prog' cond;
 						printf ",";

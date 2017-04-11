@@ -8,7 +8,6 @@ rule token = parse    (* la "fonction" aussi s'appelle token *)
   | [' ' '\t' '\n'] { token lexbuf }
   (* end of prog *)
   | ";;" { EOP }
-  (* comments *)
   (* mots cles reserves *)
   | "let" { LET }
   | "rec" { REC }

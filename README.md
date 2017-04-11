@@ -3,6 +3,7 @@ Projet 2
 # Rendu 2: La Fouine !
 
 ## Fonctionnalites
+* fonctions marchent totalement si on leur passe des valeurs en argument... un peu moins si on leur passe des fonctions.
 
 ## Testcases
 * operators.in -> priority of operators test :  print > any fun > * > + = -
@@ -17,7 +18,7 @@ Projet 2
 
 ## The merdz a faire (Vincent)
 * verifier que quand une fonction non recursive s'apelle, ca plante
-
+* non rec fun qui plantent
 ## Les merdes que j'ai faites:
 
 * les fonctions doivent marcher
