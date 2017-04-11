@@ -93,9 +93,9 @@ and interpreter prg env debug =
                             match prg'' with
                             | Value(a) -> let r = ref a in
                                           Hashtbl.remove env id;
-                                          Hashtbl.add env id (Ref(r))
+                                          Hashtbl.add env id (Ref(r));
+                                          Value(!r)
                             | _ -> failwith("Reassign: not a reference stored") end ;
-                          Unit
                           
   | Bang(id) -> begin                
                   match (Hashtbl.find env id) with
