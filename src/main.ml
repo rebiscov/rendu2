@@ -3,7 +3,7 @@ open Sys
 open Printf
 open Interpreter
 
-let env: (ident, expr) Hashtbl.t = Hashtbl.create 1000;;
+let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;;
 let lexbuf  = Lexing.from_channel stdin;;
 let parse () = Parser.main Lexer.token lexbuf;;
   
@@ -25,7 +25,7 @@ let main () =
 	if !inter then 
 		let prog = parse() in 
 		print_prog prog; 
-		print_prog (interpreter prog env !debug)
+		print_prog (interpreter prog env)
 	else 
 		let prog = parse() in
 		print_prog prog;;
