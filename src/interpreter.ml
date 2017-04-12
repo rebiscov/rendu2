@@ -211,6 +211,5 @@ and interpreter prg env debug =
                          | (Value(x), Value(y)) when x <= y -> if debug then Printf.printf "%d is smaller or equals than %d" x y; Value(1)
                          | _ -> Value(0) end                                              
 
-
                                                     
   | _ -> failwith("Not supported yet");;
