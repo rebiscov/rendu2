@@ -25,7 +25,7 @@ let main () =
 	if !inter then 
 		let prog = parse() in 
 		print_prog prog; 
-		print_prog (interpreter prog env)
+		print_prog (launch_inter prog env (!debug))
 	else 
 		let prog = parse() in
 		print_prog prog;;

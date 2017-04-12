@@ -17,8 +17,8 @@ Projet 2
 
 
 ## The merdz a faire (Vincent)
-* verifier que quand une fonction non recursive s'apelle, ca plante
-* non rec fun qui plantent
+* rec fun plante
+* Implémenter files
 ## Les merdes que j'ai faites:
 
 * les fonctions doivent marcher
