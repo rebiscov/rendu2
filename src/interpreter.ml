@@ -6,19 +6,15 @@ open Utils
 let clots = Hashtbl.create 1000;;
 let s = new_stack();;
   
-let make_cloture prg env funname =
+let make_cloture prg env funname debug =
   let vars = Hashtbl.create (100) in
   let clot = Hashtbl.create (100) in
   
   (* findvar nous donne le nom des arguments attendu par une fonction (prg), ces nom ne doivent pas etre ajoute a la cloture *) 
   let rec findvar prg =
     match prg with
-    | Fun(id,prg') ->	
+    | Fun(id,prg') | Recfun(id, prg')->	
        Hashtbl.add vars id ();  (* on init cette table *)
-       findvar prg'
-
-    | Recfun(id,prg')->	
-       Hashtbl.add vars id ();
        findvar prg'
        
     | _ -> ()
@@ -28,20 +24,32 @@ let make_cloture prg env funname =
   let rec findid prg =
     match prg with
     | Id(id) ->
+       if debug then Printf.printf "  MC: treating %s..." id;
        if not (Hashtbl.mem vars id) then
-         let v = Hashtbl.find env id in
-         Hashtbl.add clot id v
-    | Let(_,prg1,prg2)
-      | Plus(prg1,prg2)
-      | Minus(prg1,prg2)
-      | Mult(prg1,prg2)
-      | App(prg1,prg2) -> 
+         begin
+           let v = Hashtbl.find env id in
+           Hashtbl.add clot id v;
+           Printf.printf "  %s added successfully !\n" id
+         end
+       else
+         if debug then Printf.printf "  %s was not added: it is one of the arguments\n" id
+       
+    | Let(_,prg1,prg2) | Plus(prg1,prg2) | Minus(prg1,prg2) | Mult(prg1,prg2) | App(prg1,prg2) | Eq(prg1, prg2) | Neq(prg1, prg2) | Smaller(prg1, prg2) | Smalleq(prg1, prg2) | Greater(prg1, prg2) | Greateq(prg1, prg2)-> 
        findid prg1;
        findid prg2
-    | Fun(_,prg1)
-      | Recfun(_, prg1) -> 
+    | Fun(_,prg1) | Recfun(_, prg1) -> 
        findid prg1
-    |_ -> ()
+    | Value(_) | Print -> ()
+    | If(prg1, prg2, prg3) ->
+       findid prg1;
+       findid prg2;
+       findid prg3;
+    | _ -> if debug then
+             begin
+               Printf.printf "Warning: in make_cloture, some pattern are not recognised :";
+               print_prog prg
+             end
+        
   in
   Hashtbl.add vars funname ();
   findvar prg;
@@ -60,7 +68,7 @@ let launch_inter prg env debug =
        let f = Fun(id,prg1) in
        debugger ("defining fun :"^name^" = ") f ;
 
-       let clot = make_cloture f env name in
+       let clot = make_cloture f env name debug in
        Hashtbl.add env name f;
        Hashtbl.add clots name clot;
        let out = interpreter prg2 env in
@@ -73,7 +81,7 @@ let launch_inter prg env debug =
     | Let(name, Recfun(id, prg1), prg2) -> 
        let f = Recfun(id, prg1) in
        debugger ("defining recfun "^name^" = ") f;
-       let clot = make_cloture f env name in
+       let clot = make_cloture f env name debug in
        Hashtbl.add env name f;
        Hashtbl.add clot name f;
        Hashtbl.add clots name clot;
@@ -265,3 +273,4 @@ let launch_inter prg env debug =
     | _ -> failwith("Not supported yet")
   in
   interpreter prg env ;;
+
