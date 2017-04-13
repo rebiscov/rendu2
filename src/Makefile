@@ -11,7 +11,7 @@ vincent:
 
 clean:
 	rm -R _build
-	rm main.native
+	rm fouine
 
 clean_v:
 	rm *.cm*
