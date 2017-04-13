@@ -7,94 +7,90 @@ let clots = Hashtbl.create 1000;;
 let s = new_stack();;
   
 let make_cloture prg env funname =
-  let vars = Hashtbl.create (100) in
-  let clot = Hashtbl.create (100) in
-  let rec findvar prg =
-    match prg with
-    | Fun(id,prg') ->	Hashtbl.add vars id ();  (* on init cette table *)
-      		 			findvar prg'
-	| Recfun(id,prg')->	Hashtbl.add vars id ();
-						findvar prg'
-    | _ -> ()
-  in
-  let rec findid prg =
-    match prg with
-    | Id(id) ->
-       if not (Hashtbl.mem vars id) then
-         let v = Hashtbl.find env id in
-         Hashtbl.add clot id v
-    | Let(_,prg1,prg2)
-      | Plus(prg1,prg2)
-      | Minus(prg1,prg2)
-      | Mult(prg1,prg2)
-      | App(prg1,prg2)
-      -> findid prg1;
-         findid prg2
-    | Fun(_,prg1)
-      | Recfun(_, prg1)
-      -> findid prg1
-    |_ -> ()
-  in
-  findvar prg;
-  findid prg;
-  clot;;
+	let vars = Hashtbl.create (100) in
+	let clot = Hashtbl.create (100) in
+	
+	(* findvar nous donne le nom des arguments attendu par une fonction (prg), ces nom ne doivent pas etre ajoute a la cloture *) 
+	let rec findvar prg =
+    	match prg with
+    	| Fun(id,prg') ->	
+			Hashtbl.add vars id ();  (* on init cette table *)
+      		findvar prg'
 
-  
+		| Recfun(id,prg')->	
+			Hashtbl.add vars id ();
+			findvar prg'
+		
+    	| _ -> ()
+  	in
+	(* on ajoute a la cloture toutes les variables necessaires au bon fonctionnement de f mais 
+	pas ses variables libres d'ou l'appel de findvar d'abord *)
+  	let rec findid prg =
+    	match prg with
+    	| Id(id) ->
+     		if not (Hashtbl.mem vars id) then
+         		let v = Hashtbl.find env id in
+         		Hashtbl.add clot id v
+    	| Let(_,prg1,prg2)
+      	| Plus(prg1,prg2)
+      	| Minus(prg1,prg2)
+      	| Mult(prg1,prg2)
+      	| App(prg1,prg2) -> 
+			findid prg1;
+         	findid prg2
+    	| Fun(_,prg1)
+      	| Recfun(_, prg1) -> 
+			findid prg1
+    	|_ -> ()
+  	in
+  	findvar prg;
+  	findid prg;
+  	clot;;
+
+
+
+
 let launch_inter prg env debug =
-  let rec interpreter prg env =
-    match prg with
-    | Let(name, Fun(id, prg1), prg2) -> begin try
-                                            if debug then Printf.printf "Defining a function\n";
-                                            let clot = make_cloture (Fun(id, prg1)) env name in
-                                            let f = Fun(id,prg1) in
-                                            Hashtbl.add env name f;
-                                            Hashtbl.add clots name clot;
-                                            print_prog f ;
-                                            if debug then Printf.printf "Adding function %s to the environment\n" name;
-                                            let prg' = interpreter prg2 env in
-                                            Hashtbl.remove env name;
-                                            Hashtbl.remove clots name;
+  	let debugger e p = if debug then begin print_string e; print_prog p end;
+	in 
+	let rec interpreter prg env =
+    	match prg with
+    	| Let(name, Fun(id, prg1), prg2) -> 
+			let f = Fun(id,prg1) in
+			debugger ("defining fun :"^name^" = ") f ;
 
-                                            if debug then  Printf.printf "Deleting function %s name from the environment\n" name ;
-                                            prg'
-                                          with
-                                          | Not_found -> printf "Let function: the key %s is not present in the hashtable\n" name; exit 1
-                                          | e ->  printf "Unknown error in interpreter: Let fun definition: %s\n" (Printexc.to_string e); exit 1 end
+			let clot = make_cloture f env name in
+			Hashtbl.add env name f;
+			Hashtbl.add clots name clot;
+			let out = interpreter prg2 env in
+			Hashtbl.remove env name;
+			Hashtbl.remove clots name;
 
-    | Let(name, Recfun(id, prg1), prg2) -> begin
-                                               if debug then Printf.printf "Defining a function\n";
-                                               let clot = make_cloture (Recfun(id, prg1)) env name in
-											   let f = Recfun(id,prg1) in
-                                               Hashtbl.add env name f;
-                                               Hashtbl.add clot name f;
-                                               Hashtbl.add clots name clot;
-                                               if debug then Printf.printf "Adding function %s to the environment\n" name;
-                                               let prg' = interpreter prg2 env in
-                                               try
-											   Hashtbl.remove env name;
-                                               Hashtbl.remove clots name;
-                                               
+			debugger ("removing function "^name^" = ") f;
+			
+			out
+    	| Let(name, Recfun(id, prg1), prg2) -> 
+			let f = Recfun(id, prg1) in
+			debugger ("defining recfun "^name^" = ") f;
+			let clot = make_cloture f env name in
+			Hashtbl.add env name f;
+			Hashtbl.add clot name f;
+			Hashtbl.add clots name clot;
+			let out = interpreter prg2 env in
+			
+			debugger ("removing recfun "^name^" = ") f;
+			Hashtbl.remove env name;
+			Hashtbl.remove clots name;
+			out
 
-                                               if debug then  Printf.printf "Deleting function %s name from the environment\n" name ;
-                                               prg'
-                                             with
-                                             | Not_found -> printf "Let function: the key %s is not present in the hashtable\n" name; exit 1
-                                             | e ->  printf "Unknown error in interpreter: Let fun definition: %s\n" (Printexc.to_string e); exit 1 end                                    
-
-    | Let(name, prg1, prg2) -> begin try
-                                   if debug then Printf.printf "Defining a variable\n";
-                                   let prg1' = interpreter prg1 env in
-                                   Hashtbl.add env name prg1';
-                                   if debug then Printf.printf "Adding variable %s to the environment\n" name;
-                                   let prg2' = interpreter prg2 env in
-                                   Hashtbl.remove env name;
-                                   if debug then Printf.printf "Deleting variable %s from the environment\n" name;
-                                   prg2'
-                                   
-                                 with
-                                 | Not_found -> printf "Let variables:the key %s is not present in the hashtable\n" name; exit 1
-                                 | e -> printf "Unknown error in interpreter: Let definition: %s\n" (Printexc.to_string e); exit 1 end
-
+		| Let(name, prg1, prg2) -> 
+			debugger ("defining var : "^name^" = ") prg1;
+			let prg1' = interpreter prg1 env in
+			Hashtbl.add env name prg1';
+			let prg2' = interpreter prg2 env in
+			Hashtbl.remove env name;
+			debugger ("deleting var "^name^" = ") prg1;
+			prg2'
                              
     | Plus(prg1, prg2) -> let prg1' = interpreter prg1 env in
                           let prg2' = interpreter prg2 env in
