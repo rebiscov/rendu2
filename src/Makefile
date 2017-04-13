@@ -1,5 +1,6 @@
 all:
 	ocamlbuild -yaccflag -v -lib unix main.native
+	mv main.native fouine
 
 vincent:
 	ocamlopt prog.ml

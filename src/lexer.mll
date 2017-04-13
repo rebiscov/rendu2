@@ -16,8 +16,10 @@ rule token = parse    (* la "fonction" aussi s'appelle token *)
   | "then" { THEN }
   | "else" { ELSE }
   | "print" { PRINT }
+  | "fun"	{ FUN }
   | "ref" 	{ REF }
   (* reserved operators *)
+  | "->"	{ ARROW }
   | "!"		{ BANG }
   | ":="	{ REASSIGN }
   (* comp operators *)
