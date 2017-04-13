@@ -6,92 +6,100 @@ open Utils
 let clots = Hashtbl.create 1000;;
 let s = new_stack();;
   
-let make_cloture prg env funname =
-	let vars = Hashtbl.create (100) in
-	let clot = Hashtbl.create (100) in
-	
-	(* findvar nous donne le nom des arguments attendu par une fonction (prg), ces nom ne doivent pas etre ajoute a la cloture *) 
-	let rec findvar prg =
-    	match prg with
-    	| Fun(id,prg') ->	
-			Hashtbl.add vars id ();  (* on init cette table *)
-      		findvar prg'
-
-		| Recfun(id,prg')->	
-			Hashtbl.add vars id ();
-			findvar prg'
-		
-    	| _ -> ()
-  	in
-	(* on ajoute a la cloture toutes les variables necessaires au bon fonctionnement de f mais 
+let make_cloture prg env funname debug =
+  let vars = Hashtbl.create (100) in
+  let clot = Hashtbl.create (100) in
+  
+  (* findvar nous donne le nom des arguments attendu par une fonction (prg), ces nom ne doivent pas etre ajoute a la cloture *) 
+  let rec findvar prg =
+    match prg with
+    | Fun(id,prg') | Recfun(id, prg')->	
+       Hashtbl.add vars id ();  (* on init cette table *)
+       findvar prg'
+       
+    | _ -> ()
+  in
+  (* on ajoute a la cloture toutes les variables necessaires au bon fonctionnement de f mais 
 	pas ses variables libres d'ou l'appel de findvar d'abord *)
-  	let rec findid prg =
-    	match prg with
-    	| Id(id) ->
-     		if not (Hashtbl.mem vars id) then
-         		let v = Hashtbl.find env id in
-         		Hashtbl.add clot id v
-    	| Let(_,prg1,prg2)
-      	| Plus(prg1,prg2)
-      	| Minus(prg1,prg2)
-      	| Mult(prg1,prg2)
-      	| App(prg1,prg2) -> 
-			findid prg1;
-         	findid prg2
-    	| Fun(_,prg1)
-      	| Recfun(_, prg1) -> 
-			findid prg1
-    	|_ -> ()
-  	in
-  	findvar prg;
-  	findid prg;
-  	clot;;
+  let rec findid prg =
+    match prg with
+    | Id(id) ->
+       if debug then Printf.printf "  MC: treating %s..." id;
+       if not (Hashtbl.mem vars id) then
+         begin
+           let v = Hashtbl.find env id in
+           Hashtbl.add clot id v;
+           Printf.printf "  %s added successfully !\n" id
+         end
+       else
+         if debug then Printf.printf "  %s was not added: it is one of the arguments\n" id
+       
+    | Let(_,prg1,prg2) | Plus(prg1,prg2) | Minus(prg1,prg2) | Mult(prg1,prg2) | App(prg1,prg2) | Eq(prg1, prg2) | Neq(prg1, prg2) | Smaller(prg1, prg2) | Smalleq(prg1, prg2) | Greater(prg1, prg2) | Greateq(prg1, prg2)-> 
+       findid prg1;
+       findid prg2
+    | Fun(_,prg1) | Recfun(_, prg1) -> 
+       findid prg1
+    | Value(_) | Print -> ()
+    | If(prg1, prg2, prg3) ->
+       findid prg1;
+       findid prg2;
+       findid prg3;
+    | _ -> if debug then
+             begin
+               Printf.printf "Warning: in make_cloture, some pattern are not recognised :";
+               print_prog prg
+             end
+        
+  in
+  findvar prg;
+  findid prg;
+  clot;;
 
 
 
 
 let launch_inter prg env debug =
-  	let debugger e p = if debug then begin print_string e; print_prog p end;
-	in 
-	let rec interpreter prg env =
-    	match prg with
-    	| Let(name, Fun(id, prg1), prg2) -> 
-			let f = Fun(id,prg1) in
-			debugger ("defining fun :"^name^" = ") f ;
+  let debugger e p = if debug then begin print_string e; print_prog p end;
+  in 
+  let rec interpreter prg env =
+    match prg with
+    | Let(name, Fun(id, prg1), prg2) -> 
+       let f = Fun(id,prg1) in
+       debugger ("defining fun :"^name^" = ") f ;
 
-			let clot = make_cloture f env name in
-			Hashtbl.add env name f;
-			Hashtbl.add clots name clot;
-			let out = interpreter prg2 env in
-			Hashtbl.remove env name;
-			Hashtbl.remove clots name;
+       let clot = make_cloture f env name debug in
+       Hashtbl.add env name f;
+       Hashtbl.add clots name clot;
+       let out = interpreter prg2 env in
+       Hashtbl.remove env name;
+       Hashtbl.remove clots name;
 
-			debugger ("removing function "^name^" = ") f;
-			
-			out
-    	| Let(name, Recfun(id, prg1), prg2) -> 
-			let f = Recfun(id, prg1) in
-			debugger ("defining recfun "^name^" = ") f;
-			let clot = make_cloture f env name in
-			Hashtbl.add env name f;
-			Hashtbl.add clot name f;
-			Hashtbl.add clots name clot;
-			let out = interpreter prg2 env in
-			
-			debugger ("removing recfun "^name^" = ") f;
-			Hashtbl.remove env name;
-			Hashtbl.remove clots name;
-			out
+       debugger ("removing function "^name^" = ") f;
+       
+       out
+    | Let(name, Recfun(id, prg1), prg2) -> 
+       let f = Recfun(id, prg1) in
+       debugger ("defining recfun "^name^" = ") f;
+       let clot = make_cloture f env name debug in
+       Hashtbl.add env name f;
+       Hashtbl.add clot name f;
+       Hashtbl.add clots name clot;
+       let out = interpreter prg2 env in
+       
+       debugger ("removing recfun "^name^" = ") f;
+       Hashtbl.remove env name;
+       Hashtbl.remove clots name;
+       out
 
-		| Let(name, prg1, prg2) -> 
-			debugger ("defining var : "^name^" = ") prg1;
-			let prg1' = interpreter prg1 env in
-			Hashtbl.add env name prg1';
-			let prg2' = interpreter prg2 env in
-			Hashtbl.remove env name;
-			debugger ("deleting var "^name^" = ") prg1;
-			prg2'
-                             
+    | Let(name, prg1, prg2) -> 
+       debugger ("defining var : "^name^" = ") prg1;
+       let prg1' = interpreter prg1 env in
+       Hashtbl.add env name prg1';
+       let prg2' = interpreter prg2 env in
+       Hashtbl.remove env name;
+       debugger ("deleting var "^name^" = ") prg1;
+       prg2'
+       
     | Plus(prg1, prg2) -> let prg1' = interpreter prg1 env in
                           let prg2' = interpreter prg2 env in
                           begin
@@ -123,28 +131,28 @@ let launch_inter prg env debug =
     | Id(ident) ->
        begin
          if Hashtbl.mem env ident then
-           	begin
-		   	let p = Hashtbl.find env ident in
-            if debug then 
-			 	begin
-				Printf.printf "Changing id %s for prog\n" ident;
-             	print_prog p
-			 	end;
-			 match p with
-             	| Fun(x,prg')->	if Hashtbl.mem clots ident 
-								then
-                                	let cloture = Hashtbl.find clots ident in
-                                	interpreter (Fun(x,prg')) cloture
+           begin
+	     let p = Hashtbl.find env ident in
+             if debug then 
+	       begin
+		 Printf.printf "Changing id %s for prog\n" ident;
+             	 print_prog p
+	       end;
+	     match p with
+             | Fun(x,prg')->	if Hashtbl.mem clots ident 
+				then
+                                  let cloture = Hashtbl.find clots ident in
+                                  interpreter (Fun(x,prg')) cloture
                               	else
-                                	begin
-                                  	Printf.printf "Id: the key %s is not present in clots\n" ident;
-                                  	exit 1
-                                	end
-				| Recfun(x,prg') -> 
-									let clot = Hashtbl.find clots ident in
-									interpreter (Recfun(x,prg')) clot
-									
-             	| prg'' -> interpreter prg'' env
+                                  begin
+                                    Printf.printf "Id: the key %s is not present in clots\n" ident;
+                                    exit 1
+                                  end
+	     | Recfun(x,prg') -> 
+		let clot = Hashtbl.find clots ident in
+		interpreter (Recfun(x,prg')) clot
+		
+             | prg'' -> interpreter prg'' env
            end
          else
            begin
@@ -162,36 +170,36 @@ let launch_inter prg env debug =
                        
 
     | App(x, p) -> if debug then
-                    	begin 
-                    	Printf.printf "Pushing in the stack: ";
-                    	print_prog p
-                    	end ;
-				    let p_clean = interpreter p env in
-					push s p_clean;
-                 	interpreter x env
-                      
+                     begin 
+                       Printf.printf "Pushing in the stack: ";
+                       print_prog p
+                     end ;
+		   let p_clean = interpreter p env in
+		   push s p_clean;
+                   interpreter x env
+                   
     | Fun(id, prg') -> 	
-                    let e = pop s in
-					if debug then
-                        begin
-                        Printf.printf "Pop value from stack: ";
-                       	print_prog e
-                        end;
-                    Hashtbl.add env id e;
-                    let out = interpreter prg' env in
-                    Hashtbl.remove env id;
-                    out
-	| Recfun(id,prg') -> 	let e = pop s in
-							if debug then
-                         		begin
-                           		Printf.printf "Pop value from stack: ";
-                           		print_prog e
-                         	end;
-							Hashtbl.add env id e;
-							let out = interpreter prg' env in
-							Hashtbl.remove env id;
-							out
-						
+       let e = pop s in
+       if debug then
+         begin
+           Printf.printf "Pop value from stack: ";
+           print_prog e
+         end;
+       Hashtbl.add env id e;
+       let out = interpreter prg' env in
+       Hashtbl.remove env id;
+       out
+    | Recfun(id,prg') -> 	let e = pop s in
+				if debug then
+                         	  begin
+                           	    Printf.printf "Pop value from stack: ";
+                           	    print_prog e
+                         	  end;
+				Hashtbl.add env id e;
+				let out = interpreter prg' env in
+				Hashtbl.remove env id;
+				out
+				
     | If(prg1, prg2, prg3) -> if debug then Printf.printf "If then else\n";
                               if interpreter prg1 env = (Value(1)) then
                                 begin if debug then
