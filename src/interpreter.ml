@@ -51,6 +51,7 @@ let make_cloture prg env funname debug =
              end
         
   in
+  Hashtbl.add vars funname ();
   findvar prg;
   findid prg;
   clot;;
