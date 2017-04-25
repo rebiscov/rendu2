@@ -1,0 +1,10 @@
+let f x = x * 3 in
+let g = fun x -> x * 3 in
+let h x y = x - y in
+let z x = fun y -> x - y in
+let a = print (f 3) in
+let b = print (g 3) in
+let c = print (h 2 5) in
+let d = print (z 2 5) in
+0 ;;
+
