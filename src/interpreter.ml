@@ -5,6 +5,7 @@ open Utils
 
 let clots = Hashtbl.create 1000;;
 let s = new_stack();;
+let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;;
   
 let make_cloture prg env funname debug =
   let vars = Hashtbl.create (100) in
@@ -59,7 +60,7 @@ let make_cloture prg env funname debug =
 
 
 
-let launch_inter prg env debug =
+let launch_inter prg debug =
   let debugger e p = if debug then begin print_string e; print_prog p end;
   in 
   let rec interpreter prg env =

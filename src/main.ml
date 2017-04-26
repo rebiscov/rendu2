@@ -4,7 +4,6 @@ open Printf
 open Interpreter
 open Sedc
 
-let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;;
 let lexbuf  = Lexing.from_channel stdin;;
 let parse () = Parser.main Lexer.token lexbuf;;
   
@@ -30,7 +29,7 @@ let main () =
 	if !inter then 
 		let prog = parse() in 
 		print_prog prog; 
-		print_prog (launch_inter prog env (!debug))
+		print_prog (launch_inter prog (!debug))
 	else if !sedc then 
 		let prog = parse() in
 		if is_compilable prog then

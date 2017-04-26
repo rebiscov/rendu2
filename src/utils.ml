@@ -9,3 +9,5 @@ let pop s =
 let push s a =
   s := a::!s;;
 
+let empty s =
+  !s = [];;

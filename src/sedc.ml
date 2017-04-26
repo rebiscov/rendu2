@@ -35,5 +35,4 @@ let rec compile p =
 	| _ -> printf "there was an error";[] 
 	;;
 
-let rec execute s =
 
