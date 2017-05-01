@@ -49,7 +49,7 @@ let main () =
 		if is_compilable prog then
 			let s = compile prog in
 			print_sedc s ;
-			execute s [];
+			execute s [] !debug;
 		else
 			print_string "the program is not compilable yet" 
 	else
