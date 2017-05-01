@@ -72,7 +72,7 @@ main:
 
 idents:
 	| 			{ [] }
-	| IDENT idents { $1 :: $2 }
+	| idents IDENT { $2 :: $1 }
 
 
 /* here func is used as a general function: it can either be an arity 0 function (a constant) or a regular function */
@@ -99,8 +99,8 @@ comp:
 
 prog:
 /* fun and var definitions */  
-	| LET IDENT idents EQ prog IN prog 		   	{ Let($2,List.fold_left (fun p v-> Fun(v,p)) $5 $3, $7) } 
-	| LET REC IDENT idents EQ prog IN prog     	{ Let($3,List.fold_left (fun p v -> Recfun(v,p)) $6 $4, $8) }
+	| LET IDENT idents EQ prog IN prog 		   	{ Let($2,List.fold_right (fun v p-> Fun(v,p)) $3 $5, $7) } 
+	| LET REC IDENT idents EQ prog IN prog     	{ Let($3,List.fold_right (fun v p -> Recfun(v,p)) $4 $6, $8) }
 	| FUN IDENT ARROW prog						{ Fun($2,$4) }
 	| prog SEMI prog							{ Semi($1,$3) }
 	| prog MULT prog							{ Mult($1,$3) }
