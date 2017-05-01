@@ -4,17 +4,22 @@ open Printf
 open Interpreter
 open Sedc
 
-let lexbuf  = Lexing.from_channel stdin;;
-let parse () = Parser.main Lexer.token lexbuf;;
-  
-(* we need to build an arg-parser *)
+let lexbuf_stdin  = Lexing.from_channel stdin;;
+let parse_from_stdin () = Parser.main Lexer.token lexbuf_stdin;;
+
+let parse filename = 
+	let lexbuf = Lexing.from_channel (open_in filename) in
+	Parser.main Lexer.token lexbuf ;;
   
 let main () =
 	let inter = ref false in
 	let debug = ref false in
 	let sedc = ref false in
-	for i = 0 to Array.length Sys.argv -1 do
-
+	let filename = ref "" in
+	for i = 1 to Array.length Sys.argv -1 do
+		if Sys.argv.(i).[0] <> '-' then
+			filename := Sys.argv.(i)
+		else
 		if Sys.argv.(i) = "--interpreter" || Sys.argv.(i) = "-i" then 
 			inter := true
 
@@ -27,14 +32,22 @@ let main () =
 		else ()
 	done;
 	if !inter then 
-		let prog = parse() in 
-		print_prog prog; 
-		print_prog (launch_inter prog (!debug))
+		if !filename = "" then
+			begin
+			let prog = parse_from_stdin() in
+			print_prog prog; 
+			print_prog (launch_inter prog (!debug))
+			end
+		else
+			begin
+			let prog = parse (!filename) in 
+			print_prog prog; 
+			print_prog (launch_inter prog (!debug))
+			end
 	else if !sedc then 
-		let prog = parse() in
+		let prog = parse_from_stdin() in
 		if is_compilable prog then
 			let s = compile prog in
-			(*print_int (List.length s) ; *)
 			print_sedc s ;
 			execute s [];
 		else

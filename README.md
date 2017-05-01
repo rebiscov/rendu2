@@ -1,8 +1,22 @@
 Projet 2
 
+# Rendu 3: La Fouine 2
+
+## A propos du rendu 2:
+
+* fix du shift reduce conflict (juste une priorité manquante qui n'avait pas été push sur la dernière version)
+* JD: fix du format (/!\ pas sur d'avoir fini, a retravailler...)
+* JD: rendre le code propre (comment de merde qui trainent)
+* VR: interpreter toujours une fonction avant de la push dans l'environnement
+* 
+
+
 # Rendu 2: La Fouine !
 
 Note: comme pour le premier rendu, le parsing se fait a partir de stdin, donc il faut pipe les exemples dedans!
+
+
+
 
 ## Mode d'emploi
 
