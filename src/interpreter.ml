@@ -5,6 +5,7 @@ open Utils
 
 let clots = Hashtbl.create 1000;;
 let s = new_queue();;
+let s1 = new_queue();;
 let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;;
 let last_env = ref env;;
 let trywith = new_stack();;
@@ -59,6 +60,113 @@ let make_cloture prg env funname debug =
   findvar prg;
   findid prg;
   clot;;
+
+let rec prepare_cloture prg =
+  match prg with
+  | Let(ident, prg1, prg2) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     Let("_"^ident, prg1', prg2')
+  | Fun(ident, prg') ->
+     let prg'' = prepare_cloture prg' in
+     Fun("_"^ident, prg'')
+  | Recfun(ident, prg') ->
+     let prg'' = prepare_cloture prg' in
+     Recfun("_"^ident, prg'')
+  | Raise(n) ->
+     prg
+  | Try(prg1, n, prg2) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     Try(prg1', n, prg2')
+  | Error ->
+     Error
+  | Semi(prg1, prg2) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     Semi(prg1', prg2')
+  | Ref(prg') ->
+     let prg'' = prepare_cloture prg' in
+     Ref(prg'')
+  | Bang(ident) ->
+     Bang("_"^ident)
+  | Reassign(ident, prg') ->
+     let prg'' = prepare_cloture prg' in
+     Reassign("_"^ident, prg'')
+  | Id(ident) ->
+     Id("_"^ident)
+  | Value(n) ->
+     prg
+  | Plus(prg1, prg2) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     Plus(prg1', prg2')
+  | Mult(prg1, prg2) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     Mult(prg1', prg2')     
+  | Minus(prg1, prg2) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     Minus(prg1', prg2')     
+  | Eq(prg1, prg2) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     Eq(prg1', prg2')     
+  | Neq(prg1, prg2) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     Neq(prg1', prg2')     
+  | Greater(prg1, prg2) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     Greater(prg1', prg2')     
+  | Greateq(prg1, prg2) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     Greateq(prg1', prg2')     
+  | Smaller(prg1, prg2) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     Smaller(prg1', prg2')     
+  | Smalleq(prg1, prg2) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     Smalleq(prg1', prg2')     
+  | App(prg1, prg2) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     App(prg1', prg2')     
+  | If(prg1, prg2, prg3) ->
+     let prg1' = prepare_cloture prg1 in
+     let prg2' = prepare_cloture prg2 in
+     let prg3' = prepare_cloture prg3 in
+     If(prg1', prg2', prg3')
+  | Print ->
+     prg
+  | Unit ->
+     prg
+;;
+  
+let add_cloture clot env =
+  let rec add_cloture_aux prg =
+    match prg with
+    | Id(ident) ->
+       let e = Hashtbl.find env ident in
+       Hashtbl.add clot ("_"^ident) e
+    | Let(_,prg1,prg2) | Plus(prg1,prg2) | Minus(prg1,prg2) | Mult(prg1,prg2) | App(prg1,prg2) | Eq(prg1, prg2) | Neq(prg1, prg2) | Smaller(prg1, prg2) | Smalleq(prg1, prg2) | Greater(prg1, prg2) | Greateq(prg1, prg2) | Semi(prg1, prg2) -> 
+       add_cloture_aux prg1; add_cloture_aux prg2
+    | Fun(_,prg1) | Recfun(_, prg1) -> 
+       add_cloture_aux prg1
+    | Value(_) | Print -> ()
+    | If(prg1, prg2, prg3) ->
+       add_cloture_aux prg1; add_cloture_aux prg2; add_cloture_aux prg3
+    | _ -> Printf.printf "add_cloture: following prog not supported:"; print_prog prg; exit 1 in
+  while not (empty_queue s1) do
+    let prg = pop s1 in
+    add_cloture_aux prg
+  done;;
+  
 
 let launch_inter prg debug =
   let debugger e p = if debug then begin print_string e; print_prog p end;
@@ -202,8 +310,8 @@ let launch_inter prg debug =
                        Printf.printf "App: pushing in the queue: ";
                        print_prog p
                      end ;
-		   let p_clean = interpreter p env in
-		   push s p_clean;
+		   push s p;
+                   push s1 p;
                    interpreter x env
                    
     | Fun(id, prg') ->
