@@ -9,6 +9,9 @@ type prog =
 	| Let of ident*prog*prog
 	| Fun of ident*prog
 	| Recfun of ident*prog
+	(* exceptions *)
+	| Raise of int
+	| Try of prog*int*prog
 	(* references & imperative: *)
 	| Semi of prog*prog
 	| Ref of prog
@@ -139,7 +142,13 @@ let rec print_prog' p =
 						print_string ",";
 						print_prog' p2;
 						print_string ")";
-	(* | _ -> printf "$not impl$" *)
+	| Try(p1,e,p2)	->	print_string "Try(";
+						print_prog' p1;
+						printf ",%d," e;
+						print_prog' p2;
+						print_string ")";
+	| Raise(e)		-> printf "Raise(%d)" e
+	| _ -> printf "$not impl$"
 in
 print_prog' p;
 printf "\n";;

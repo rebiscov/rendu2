@@ -7,10 +7,9 @@ exception Eof;;
 rule token = parse    (* la "fonction" aussi s'appelle token *)
   | [' ' '\t' '\n'] { token lexbuf }
   (* end of prog *)
-  (*| ";;" { EOP } *)
+  | ";;" { EOP } 
   (* mots cles reserves *)
   | ";"		{ SEMI }
-  | ";;"	{ EOP} 
   | "let" { LET }
   | "rec" { REC }
   | "in" { IN }
@@ -20,6 +19,10 @@ rule token = parse    (* la "fonction" aussi s'appelle token *)
   | "print" { PRINT }
   | "fun"	{ FUN }
   | "ref" 	{ REF }
+  | "try"	{ TRY }
+  | "with"	{ WITH }
+  | "raise"	{ RAISE }
+  | "E"		{ EXCEP }
   (* reserved operators *)
   | "->"	{ ARROW }
   | "!"		{ BANG }
@@ -40,6 +43,6 @@ rule token = parse    (* la "fonction" aussi s'appelle token *)
   | "-" { MINUS }
   (* constants *)
   | ['0'-'9']['0'-'9']* as s {VALUE (int_of_string s)}
-  | ['a'-'z' '_']['a'-'Z' '0'-'9' '_']* as v {IDENT (v) }
+  | ['a'-'z' '_']['a'-'z' 'A'-'Z' '0'-'9' '_']* as v {IDENT (v) }
   | eof { raise Eof}
 

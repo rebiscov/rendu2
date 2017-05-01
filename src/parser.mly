@@ -13,6 +13,8 @@ open Prog   (* ou on definit le type expression *)
 %token EOP
 /* reserved words */
 %token LET REC IN IF THEN ELSE PRINT REF FUN
+/* exceptions */
+%token TRY WITH RAISE EXCEP
 /* reserved operators */
 %token BANG REASSIGN ARROW
 /* comparison operators */
@@ -27,6 +29,12 @@ open Prog   (* ou on definit le type expression *)
 
 %nonassoc REF FUN
 
+
+/* exceptions */
+%nonassoc RAISE
+%nonassoc TRY
+%nonassoc WITH
+%nonassoc EXCEP
 /* reserved words */
 
 %left SEMI
@@ -111,6 +119,8 @@ prog:
 	| IDENT REASSIGN prog						{ Reassign($1,$3) }
 	| REF prog									{ Ref($2) }
 	| IF comp THEN prog ELSE prog  				{ If($2,$4,$6) }
+	| TRY prog WITH EXCEP VALUE ARROW prog		{ Try($2,$5,$7) }
+	| RAISE EXCEP VALUE							{ Raise($3) }
 ;
 
 
