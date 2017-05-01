@@ -7,10 +7,14 @@ let clots = Hashtbl.create 1000;;
 let s = new_stack();;
 let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;;
 let last_env = ref env;;
+let refs = Hashtbl.create 1000;;
+let a = ref (Plus(Value(3), Value(4)));;
+Hashtbl.add refs "yo" a;;
+    
   
 let make_cloture prg env funname debug =
-  let vars = Hashtbl.create (100) in
-  let clot = Hashtbl.create (100) in
+  let vars = Hashtbl.create 100 in
+  let clot = Hashtbl.create 100 in
   
   (* findvar nous donne le nom des arguments attendu par une fonction (prg), ces nom ne doivent pas etre ajoute a la cloture *) 
   let rec findvar prg =
@@ -36,7 +40,7 @@ let make_cloture prg env funname debug =
        else
          if debug then Printf.printf "  %s was not added: it is one of the arguments\n" id
        
-    | Let(_,prg1,prg2) | Plus(prg1,prg2) | Minus(prg1,prg2) | Mult(prg1,prg2) | App(prg1,prg2) | Eq(prg1, prg2) | Neq(prg1, prg2) | Smaller(prg1, prg2) | Smalleq(prg1, prg2) | Greater(prg1, prg2) | Greateq(prg1, prg2)-> 
+    | Let(_,prg1,prg2) | Plus(prg1,prg2) | Minus(prg1,prg2) | Mult(prg1,prg2) | App(prg1,prg2) | Eq(prg1, prg2) | Neq(prg1, prg2) | Smaller(prg1, prg2) | Smalleq(prg1, prg2) | Greater(prg1, prg2) | Greateq(prg1, prg2) | Semi(prg1, prg2) -> 
        findid prg1;
        findid prg2
     | Fun(_,prg1) | Recfun(_, prg1) -> 
@@ -65,7 +69,7 @@ let launch_inter prg debug =
     match prg with
     | Let(name, Fun(id, prg1), prg2) -> 
        let f = Fun(id,prg1) in
-       debugger ("defining fun :"^name^" = ") f ;
+       debugger ("Let: defining fun :"^name^" = ") f ;
 
        let clot = make_cloture f env name debug in
        Hashtbl.add env name f;
@@ -77,6 +81,7 @@ let launch_inter prg debug =
        debugger ("Let: removing function "^name^" = ") f;
        
        out
+       
     | Let(name, Recfun(id, prg1), prg2) -> 
        let f = Recfun(id, prg1) in
        debugger ("Let: defining recfun "^name^" = ") f;
@@ -99,6 +104,19 @@ let launch_inter prg debug =
        Hashtbl.remove env name;
        debugger ("Let: deleting var "^name^" = ") prg1;
        prg2'
+
+       (*
+    | Let(name, Ref(prg1), prg2) -> 
+       let r = Ref(prg1) in
+       debugger ("Let: defining ref :"^name^" = ") r ;
+
+       let value = interpreter prg1 env in
+       Hashtbl.add refs name value;
+       let out = interpreter prg2 env in
+
+       debugger ("Let: removing reference "^name^" = ") r;
+       
+       out *)
        
     | Plus(prg1, prg2) -> let prg1' = interpreter prg1 env in
                           let prg2' = interpreter prg2 env in
@@ -126,6 +144,7 @@ let launch_inter prg debug =
                                                       Value(a*b)
                             | _ -> failwith("Not a valid multiplication")
                           end
+                          
     | Value(a) -> Value(a)
                 
     | Id(ident) ->
@@ -162,6 +181,7 @@ let launch_inter prg debug =
              prg
            end
        end
+       
     | App(Print, x) -> let prg' = interpreter x env in
                        begin
                          match prg' with
@@ -170,9 +190,10 @@ let launch_inter prg debug =
                          | _ -> failwith("Print: not a value to print")
                        end
                        
-    | App(x, Id(ident)) -> push s (Id(ident));
-                           if debug then Printf.printf "App: pushing in the stack %s\n" ident;
-                           interpreter x env
+    | App(x, Id(ident)) when Hashtbl.mem env ident && is_fun (Hashtbl.find env ident)->
+       push s (Id(ident));
+       if debug then Printf.printf "App: pushing in the stack %s\n" ident;
+       interpreter x env
                        
     | App(x, p) -> if debug then
                      begin 
@@ -309,7 +330,12 @@ let launch_inter prg debug =
                          | (Value(x), Value(y)) when x <= y -> if debug then Printf.printf "%d is smaller or equals than %d" x y;
                                                                Value(1)
                          | _ -> Value(0)
-                       end                                                                
+                       end
+                       
+    | Semi(prg1 ,prg2) ->
+       let _ = interpreter prg1 env in
+       interpreter prg2 env
+       
     | _ -> failwith("Not supported yet")
   in
   interpreter prg env ;;

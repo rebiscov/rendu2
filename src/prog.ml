@@ -5,8 +5,6 @@ type ident = string
 ;;
 
 type prog =
-	(* do nothing type ... ???why do we need it???*)
-	| Unit
 	(* function definition *)
 	| Let of ident*prog*prog
 	| Fun of ident*prog
@@ -55,7 +53,6 @@ let bprint_prog p =
 let print_prog p = 
 let rec print_prog' p = 
 	match p with
-	| Unit			->	printf "Unit()"
 	| Let(id,p1,p2) -> 	printf "Let(%s," id;
 						print_prog' p1;
 						printf ",";
