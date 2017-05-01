@@ -10,7 +10,7 @@ open Prog   (* ou on definit le type expression *)
 
 %token <string> IDENT
 %token <int> VALUE
-/* %token EOP */
+%token EOP
 /* reserved words */
 %token LET REC IN IF THEN ELSE PRINT REF FUN
 /* reserved operators */
@@ -22,13 +22,16 @@ open Prog   (* ou on definit le type expression *)
 %token PLUS MINUS MULT
 
 /* delimiters */
-%token PCLOSE POPEN COMMA
+%token PCLOSE POPEN SEMI
 
 
 %nonassoc REF FUN
 
 /* reserved words */
-/*%nonassoc EOP */
+
+%left SEMI
+%nonassoc EOP
+
 %nonassoc LET
 %nonassoc IN
 %nonassoc IDENT
@@ -57,7 +60,6 @@ open Prog   (* ou on definit le type expression *)
 %left PLUS MINUS
 %left MULT
 %left PRINT
-%left COMMA
 
 
 %start main 
@@ -65,7 +67,7 @@ open Prog   (* ou on definit le type expression *)
 %%
 
 main:                       
-    prog COMMA COMMA { $1 }  
+    prog EOP { $1 }  
 	
 
 idents:
@@ -100,7 +102,7 @@ prog:
 	| LET IDENT idents EQ prog IN prog 		   	{ Let($2,List.fold_left (fun p v-> Fun(v,p)) $5 $3, $7) } 
 	| LET REC IDENT idents EQ prog IN prog     	{ Let($3,List.fold_left (fun p v -> Recfun(v,p)) $6 $4, $8) }
 	| FUN IDENT ARROW prog						{ Fun($2,$4) }
-/*| prog COMMA prog							{ Let("_",$1,$3) } */
+	| prog SEMI prog							{ Semi($1,$3) }
 	| prog MULT prog							{ Mult($1,$3) }
 	| prog PLUS prog          					{ Plus($1,$3) }
 	| prog MINUS prog							{ Minus($1,$3) }

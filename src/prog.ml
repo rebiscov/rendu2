@@ -12,7 +12,7 @@ type prog =
 	| Fun of ident*prog
 	| Recfun of ident*prog
 	(* references & imperative: *)
-	| Comma of prog*prog
+	| Semi of prog*prog
 	| Ref of prog
 	| Bang of ident
 	| Reassign of ident*prog
@@ -137,7 +137,7 @@ let rec print_prog' p =
 						print_prog' p1;
 						printf ")";
 	| Bang(ident) ->	printf "Bang(%s)" ident;
-	| Comma(p1,p2)	->	print_string "Comma(";
+	| Semi(p1,p2)	->	print_string "Semi(";
 						print_prog' p1;
 						print_string ",";
 						print_prog' p2;

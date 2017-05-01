@@ -9,7 +9,8 @@ rule token = parse    (* la "fonction" aussi s'appelle token *)
   (* end of prog *)
   (*| ";;" { EOP } *)
   (* mots cles reserves *)
-  | ';'		{ COMMA }
+  | ";"		{ SEMI }
+  | ";;"	{ EOP} 
   | "let" { LET }
   | "rec" { REC }
   | "in" { IN }
