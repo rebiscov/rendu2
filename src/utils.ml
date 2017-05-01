@@ -1,3 +1,5 @@
+open Prog;;
+  
 let new_stack () =
   ref ([], []);;
 
@@ -21,3 +23,8 @@ let push s a =
 
 let empty s =
   !s = ([], []);;
+
+let is_fun prg =
+  match prg with
+  | Fun(_, _) | Recfun(_, _) -> true
+  | _ -> false;;

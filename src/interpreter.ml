@@ -144,6 +144,7 @@ let launch_inter prg debug =
                                                       Value(a*b)
                             | _ -> failwith("Not a valid multiplication")
                           end
+                          
     | Value(a) -> Value(a)
                 
     | Id(ident) ->
@@ -180,6 +181,7 @@ let launch_inter prg debug =
              prg
            end
        end
+       
     | App(Print, x) -> let prg' = interpreter x env in
                        begin
                          match prg' with
@@ -188,9 +190,10 @@ let launch_inter prg debug =
                          | _ -> failwith("Print: not a value to print")
                        end
                        
-    | App(x, Id(ident)) when Hashtbl.mem clots ident-> push s (Id(ident));
-                           if debug then Printf.printf "App: pushing in the stack %s\n" ident;
-                           interpreter x env
+    | App(x, Id(ident)) when Hashtbl.mem env ident && is_fun (Hashtbl.find env ident)->
+       push s (Id(ident));
+       if debug then Printf.printf "App: pushing in the stack %s\n" ident;
+       interpreter x env
                        
     | App(x, p) -> if debug then
                      begin 
