@@ -11,7 +11,8 @@ type prog =
 	| Let of ident*prog*prog
 	| Fun of ident*prog
 	| Recfun of ident*prog
-	(* references: *)
+	(* references & imperative: *)
+	| Comma of prog*prog
 	| Ref of prog
 	| Bang of ident
 	| Reassign of ident*prog
@@ -136,6 +137,11 @@ let rec print_prog' p =
 						print_prog' p1;
 						printf ")";
 	| Bang(ident) ->	printf "Bang(%s)" ident;
+	| Comma(p1,p2)	->	print_string "Comma(";
+						print_prog' p1;
+						print_string ",";
+						print_prog' p2;
+						print_string ")";
 	(* | _ -> printf "$not impl$" *)
 in
 print_prog' p;

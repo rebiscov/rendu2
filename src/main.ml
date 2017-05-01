@@ -36,7 +36,8 @@ let main () =
 		if is_compilable prog then
 			let s = compile prog in
 			(*print_int (List.length s) ; *)
-			print_sedc s 
+			print_sedc s ;
+			execute s [];
 		else
 			print_string "the program is not compilable yet" 
 	else

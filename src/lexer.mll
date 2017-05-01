@@ -7,8 +7,9 @@ exception Eof;;
 rule token = parse    (* la "fonction" aussi s'appelle token *)
   | [' ' '\t' '\n'] { token lexbuf }
   (* end of prog *)
-  | ";;" { EOP }
+  (*| ";;" { EOP } *)
   (* mots cles reserves *)
+  | ';'		{ COMMA }
   | "let" { LET }
   | "rec" { REC }
   | "in" { IN }
