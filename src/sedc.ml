@@ -43,6 +43,7 @@ let rec compile p =
 	| _ -> printf "there was an error";[] 
 	;;
 
+<<<<<<< HEAD
 let apply x s d = 
 	match x with
 	| Const(y) 	-> (s,x::d)
@@ -77,4 +78,6 @@ let rec execute s d =
 				| [Const(y)]	-> printf "result : %d\n" y
 				| _				-> printf "error in execution\n"
 					
+=======
+>>>>>>> be5b3ba23525c22b1723338539747ee89b4c9263
 
