@@ -36,7 +36,11 @@ type prog =
 	(* if statement *)
 	(* compute prog1, if result is <> 0 then execute prog2 else execute prog3 *)
 	(* be careful, an error must be raised if the output of prog1 is not an int *)
-	| If of prog*prog*prog     
+	| If of prog*prog*prog
+        (* exceptions *)
+        | E of int
+        | Error
+        | TryWith of prog*prog
 	(* toolkit *)
 	| Print
 ;;
@@ -127,6 +131,20 @@ let rec print_prog' p =
 						printf ",";
 						print_prog' p2;
 						printf ")"
+        | TryWith(p1, p2) ->
+           printf "TryWith(";
+           print_prog' p1;
+           printf ",";
+           print_prog' p2;
+           printf ")"
+
+        | E(n) ->
+           printf "E(";
+           printf "%d" n;
+           printf ")"
+
+        | Error -> printf "Error"
+                                                
 	(* ref things *)
 	| Ref(p1) -> 		printf "Ref(";
 						print_prog' p1;

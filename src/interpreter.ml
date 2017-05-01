@@ -4,13 +4,10 @@ open Printf
 open Utils
 
 let clots = Hashtbl.create 1000;;
-let s = new_stack();;
+let s = new_queue();;
 let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;;
 let last_env = ref env;;
-let refs = Hashtbl.create 1000;;
-let a = ref (Plus(Value(3), Value(4)));;
-Hashtbl.add refs "yo" a;;
-    
+let trywith = new_stack();;
   
 let make_cloture prg env funname debug =
   let vars = Hashtbl.create 100 in
@@ -124,7 +121,12 @@ let launch_inter prg debug =
                             match (prg1', prg2') with
                             | (Value(a), Value(b)) -> if debug then Printf.printf "Adding %d and %d\n" a b;
                                                       Value(a+b)
-                            | _ -> Plus(prg1', prg2')
+                            | _ -> Printf.printf "Not a valid addition";
+                                   if empty_stack trywith then exit 1
+                                   else
+                                     begin
+                                       false_stack trywith; Error
+                                     end
                           end
 
     | Minus(prg1, prg2) -> let prg1' = interpreter prg1 env in
@@ -133,7 +135,12 @@ let launch_inter prg debug =
                              match (prg1', prg2') with
                              | (Value(a), Value(b)) -> if debug then Printf.printf "Substracting %d and %d\n" a b;
                                                        Value(a-b)
-                             | _ -> failwith("Not a valid addition")
+                             | _ -> Printf.printf "Not a valid addition";
+                                    if empty_stack trywith then exit 1
+                                    else
+                                      begin
+                                        false_stack trywith; Error
+                                      end
                            end                                                          
                            
     | Mult(prg1, prg2) -> let prg1' = interpreter prg1 env in
@@ -142,7 +149,12 @@ let launch_inter prg debug =
                             match (prg1', prg2') with
                             | (Value(a), Value(b)) -> if debug then Printf.printf "Multiplicating %d and %d\n" a b;
                                                       Value(a*b)
-                            | _ -> failwith("Not a valid multiplication")
+                            | _ -> Printf.printf "Not a valid addition";
+                                   if empty_stack trywith then exit 1
+                                   else
+                                     begin
+                                       false_stack trywith; Error
+                                     end
                           end
                           
     | Value(a) -> Value(a)
@@ -187,7 +199,12 @@ let launch_inter prg debug =
                          match prg' with
                          | Value(a) -> Printf.printf "prInt %d\n" a;
                                        prg'
-                         | _ -> failwith("Print: not a value to print")
+                         | _ -> Printf.printf "Print: not a value to print";
+                                if empty_stack trywith then exit 1
+                                else
+                                  begin
+                                    false_stack trywith; Error
+                                  end
                        end
                        
     | App(x, Id(ident)) when Hashtbl.mem env ident && is_fun (Hashtbl.find env ident)->
@@ -205,7 +222,7 @@ let launch_inter prg debug =
                    interpreter x env
                    
     | Fun(id, prg') ->
-       if not (empty s) then
+       if not (empty_queue s) then
          begin
            let e = pop s in
            begin
@@ -228,7 +245,11 @@ let launch_inter prg debug =
                   else
                     begin
                       Printf.printf "Fun: can't find id '%s'\n" ident;
-                      exit 1
+                      if empty_stack trywith then exit 1
+                      else
+                        begin
+                          false_stack trywith; Error
+                        end
                     end
                 end
              | _ ->
@@ -283,7 +304,11 @@ let launch_inter prg debug =
                     | (Value(x), Value(y)) -> if debug then Printf.printf "Non equality of %d and %d\n" x y;
                                               Value(0)
                     | _ -> Printf.printf "Not a comparison of integers !\n"; print_prog prga; print_prog prgb;
-                           exit 1
+                           if empty_stack trywith then exit 1
+                           else
+                             begin
+                               false_stack trywith; Error
+                             end
                   end
                   
                   
@@ -335,6 +360,13 @@ let launch_inter prg debug =
     | Semi(prg1 ,prg2) ->
        let _ = interpreter prg1 env in
        interpreter prg2 env
+
+    | TryWith(prg1, prg2) ->
+       push_stack trywith true;
+       if pop_stack trywith then prg1
+       else prg2
+
+    | E(n) -> Value(n)
        
     | _ -> failwith("Not supported yet")
   in
