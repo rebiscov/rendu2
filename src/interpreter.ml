@@ -8,6 +8,7 @@ let s = new_queue();;
 let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;;
 let last_env = ref env;;
 let trywith = new_stack();;
+let exn = ref (false, 0);;
   
 let make_cloture prg env funname debug =
   let vars = Hashtbl.create 100 in
@@ -121,12 +122,8 @@ let launch_inter prg debug =
                             match (prg1', prg2') with
                             | (Value(a), Value(b)) -> if debug then Printf.printf "Adding %d and %d\n" a b;
                                                       Value(a+b)
-                            | _ -> Printf.printf "Not a valid addition";
-                                   if empty_stack trywith then exit 1
-                                   else
-                                     begin
-                                       false_stack trywith; Error
-                                     end
+                            | _ -> Printf.printf "Not a valid addition\n"; exit 1
+
                           end
 
     | Minus(prg1, prg2) -> let prg1' = interpreter prg1 env in
@@ -135,12 +132,8 @@ let launch_inter prg debug =
                              match (prg1', prg2') with
                              | (Value(a), Value(b)) -> if debug then Printf.printf "Substracting %d and %d\n" a b;
                                                        Value(a-b)
-                             | _ -> Printf.printf "Not a valid addition";
-                                    if empty_stack trywith then exit 1
-                                    else
-                                      begin
-                                        false_stack trywith; Error
-                                      end
+                             | _ -> Printf.printf "Not a valid substraction\n"; exit 1
+
                            end                                                          
                            
     | Mult(prg1, prg2) -> let prg1' = interpreter prg1 env in
@@ -149,12 +142,8 @@ let launch_inter prg debug =
                             match (prg1', prg2') with
                             | (Value(a), Value(b)) -> if debug then Printf.printf "Multiplicating %d and %d\n" a b;
                                                       Value(a*b)
-                            | _ -> Printf.printf "Not a valid addition";
-                                   if empty_stack trywith then exit 1
-                                   else
-                                     begin
-                                       false_stack trywith; Error
-                                     end
+                            | _ -> Printf.printf "Not a valid multiplication\n"; exit 1
+
                           end
                           
     | Value(a) -> Value(a)
@@ -199,22 +188,18 @@ let launch_inter prg debug =
                          match prg' with
                          | Value(a) -> Printf.printf "prInt %d\n" a;
                                        prg'
-                         | _ -> Printf.printf "Print: not a value to print";
-                                if empty_stack trywith then exit 1
-                                else
-                                  begin
-                                    false_stack trywith; Error
-                                  end
+                         | _ -> Printf.printf "Print: not a value to print"; exit 1
+
                        end
                        
     | App(x, Id(ident)) when Hashtbl.mem env ident && is_fun (Hashtbl.find env ident)->
        push s (Id(ident));
-       if debug then Printf.printf "App: pushing in the stack %s\n" ident;
+       if debug then Printf.printf "App: pushing in the queue %s\n" ident;
        interpreter x env
                        
     | App(x, p) -> if debug then
                      begin 
-                       Printf.printf "App: pushing in the stack: ";
+                       Printf.printf "App: pushing in the queue: ";
                        print_prog p
                      end ;
 		   let p_clean = interpreter p env in
@@ -361,13 +346,24 @@ let launch_inter prg debug =
        let _ = interpreter prg1 env in
        interpreter prg2 env
 
-    | TryWith(prg1, prg2) ->
-       push_stack trywith true;
-       if pop_stack trywith then prg1
-       else prg2
+    | Try(prg1, n, prg2) ->
+       let prg1' = interpreter prg1 env in
+       let (b, m) = !exn in
+       if b && m = n then
+         begin
+           exn := (false, 0);
+           interpreter prg2 env
+         end
+       else
+         prg1'
 
-    | E(n) -> Value(n)
-       
+
+    | Raise(n) -> if debug then
+                    Printf.printf "Raise: raising exception '%d'\n" n;
+                  exn := (true, n);
+                  Unit
+                  
+
     | _ -> failwith("Not supported yet")
   in
   interpreter prg env ;;
