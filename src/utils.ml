@@ -1,13 +1,23 @@
 let new_stack () =
-  ref [];;
+  ref ([], []);;
 
-let pop s =
+let rev_list l =
+  let rec rev_aux l r =
+    match l with
+    | a::l1 -> rev_aux l1 (a::r)
+    | [] -> r in
+  rev_aux l [];;
+  
+let rec pop s =
   match !s with
-  | a::r -> s := r; a
-  | [] -> failwith("You're trying to pop and empty list !");;
+  | ([], []) -> failwith("You're trying to pop and empty list !")
+  | (l, a::r) -> s := (l,r); a
+  | (l, []) -> s := ([], rev_list l); pop s;;
 
 let push s a =
-  s := a::!s;;
+  let  (b, e) = !s in
+  s := (a::b, e);;
+    
 
 let empty s =
-  !s = [];;
+  !s = ([], []);;
