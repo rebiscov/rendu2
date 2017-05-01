@@ -4,7 +4,7 @@ open Printf
 open Utils
 
 let clots = Hashtbl.create 1000;;
-let s = new_stack();;
+let s = new_queue();;
 let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;;
 let last_env = ref env;;
 let refs = Hashtbl.create 1000;;

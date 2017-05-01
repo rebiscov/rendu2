@@ -1,6 +1,6 @@
 open Prog;;
   
-let new_stack () =
+let new_queue () =
   ref ([], []);;
 
 let rev_list l =
