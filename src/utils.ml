@@ -21,10 +21,30 @@ let push s a =
   s := (a::b, e);;
     
 
-let empty s =
+let empty_queue s =
   !s = ([], []);;
 
+let new_stack () =
+  ref [];;
+  
+let pop_stack s =
+  match !s with
+  | a::r -> s := r; a
+  | [] -> failwith("You're trying to pop an empty stack !");;
+
+let push_stack s a =
+  s := a::!s;;
+
+let empty_stack s =
+  !s = [];;
+
+let false_stack s =
+  let _ = pop_stack s in
+  push_stack s false;;
+  
 let is_fun prg =
   match prg with
   | Fun(_, _) | Recfun(_, _) -> true
   | _ -> false;;
+
+  
