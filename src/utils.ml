@@ -14,8 +14,5 @@ let push s a =
 let empty s =
   !s = [];;
 
-let false_stack s =
-  let _ = pop s in
-  s := false::!s;;
 
   
