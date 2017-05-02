@@ -1,3 +1,6 @@
 let a = ref 3 in
-let b = (a:=5) in
-!a ;;
+a:=5;
+print !a;
+a:= !a + 7;
+print (!a)
+;;
