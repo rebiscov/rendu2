@@ -142,6 +142,7 @@ let rec prepare_cloture prg =
      prg
   | Unit ->
      prg
+  | _ -> print_prog prg; failwith(": not supported in prepare_cloture")
 ;;
   
 let add_cloture clot env =
@@ -198,6 +199,25 @@ let launch_inter prg debug =
        Hashtbl.remove clots name;
        out
 
+    | Let(name, Ref(prg1), prg2) -> 
+       let prg1' = interpreter prg1 env in
+       let n =
+         begin
+           match prg1' with
+           | Value(m) -> m
+           | _ -> Printf.printf "Let: ref -> prg1 not a Value\n"; exit 1
+         end
+       in
+       debugger ("Let: defining ref :"^name^" = ") (Ref(prg1));
+
+       Hashtbl.add env name (Refvalue(ref n));
+       let out = interpreter prg2 env in
+
+       debugger ("Let: removing reference "^name^" = ") (Ref(prg1));
+       Hashtbl.remove env name;
+
+       out
+
     | Let(name, prg1, prg2) -> 
        debugger ("Let: defining var : "^name^" = ") prg1;
        let prg1' = interpreter prg1 env in
@@ -207,18 +227,38 @@ let launch_inter prg debug =
        debugger ("Let: deleting var "^name^" = ") prg1;
        prg2'
 
-       (*
-    | Let(name, Ref(prg1), prg2) -> 
-       let r = Ref(prg1) in
-       debugger ("Let: defining ref :"^name^" = ") r ;
-
-       let value = interpreter prg1 env in
-       Hashtbl.add refs name value;
-       let out = interpreter prg2 env in
-
-       debugger ("Let: removing reference "^name^" = ") r;
+    | Ref(prg') ->
+       Ref(interpreter prg' env)
        
-       out *)
+    | Bang(ident) ->
+       if debug then Printf.printf "Bang:";
+       let r = Hashtbl.find env ident in
+       begin
+         match r with
+         | Refvalue(refe) -> Value(!refe)
+         | _ -> failwith("Not a Refvalue")
+       end
+
+    | Reassign(ident, prg') ->
+       if debug then Printf.printf "Reassign:";
+       let prg'' = interpreter prg' env in
+       let n = 
+         begin
+           match prg'' with
+           | Value(m) -> m
+           | _ -> failwith("Not a value")
+         end
+       in
+       
+       let r = Hashtbl.find env ident in
+       begin
+         match r with
+         | Refvalue(refe) -> 
+            refe := n;
+            Value(n)
+         | _ -> failwith("not a ref value stored")
+       end
+         
        
     | Plus(prg1, prg2) -> let prg1' = interpreter prg1 env in
                           let prg2' = interpreter prg2 env in
