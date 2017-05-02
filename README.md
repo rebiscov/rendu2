@@ -26,6 +26,8 @@ Projet 2
 * ajout des exceptions (cf exceptions.ml, factplus.ml)
 
 * ajout de la machine sedc pour les expressions arithmetiques (cf arith.ml) [compilation + execution]
+* il y a des exemples de codes dans src/examples
 
+## Interpreteur
 
-
+* Si l'on défini des fonctions dont le nom commence par le caractère "_", le comportement de l'interpreteur n'est pas défini
