@@ -441,7 +441,7 @@ let launch_inter prg debug =
                   Unit
                   
 
-    | _ -> failwith("Not supported yet")
+    | _ -> print_prog prg; failwith("Not supported yet")
   in
   interpreter prg env ;;
 
