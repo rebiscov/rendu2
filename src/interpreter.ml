@@ -32,7 +32,7 @@ let make_cloture prg env funname debug =
          begin
            let v = Hashtbl.find env id in
            Hashtbl.add clot id v;
-           Printf.printf "  %s added successfully !\n" id
+           if debug then Printf.printf "  %s added successfully !\n" id;
          end
        else
          if debug then Printf.printf "  %s was not added: it is one of the arguments\n" id
