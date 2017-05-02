@@ -153,7 +153,6 @@ let rec print_prog' p =
 						print_prog' p2;
 						print_string ")";
 	| Raise(e)		-> printf "Raise(%d)" e
-	| _ -> printf "$not impl£$"
 in
 print_prog' p;
 printf "\n";;

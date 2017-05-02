@@ -149,8 +149,11 @@ let add_cloture clot env =
   let rec add_cloture_aux prg =
     match prg with
     | Id(ident) ->
-       let e = Hashtbl.find env ident in
-       Hashtbl.add clot ("_"^ident) e
+       if Hashtbl.mem env ident then
+         begin
+           let e = Hashtbl.find env ident in
+           Hashtbl.add clot ("_"^ident) e
+         end
     | Let(_,prg1,prg2) | Plus(prg1,prg2) | Minus(prg1,prg2) | Mult(prg1,prg2) | App(prg1,prg2) | Eq(prg1, prg2) | Neq(prg1, prg2) | Smaller(prg1, prg2) | Smalleq(prg1, prg2) | Greater(prg1, prg2) | Greateq(prg1, prg2) | Semi(prg1, prg2) -> 
        add_cloture_aux prg1; add_cloture_aux prg2
     | Fun(_,prg1) | Recfun(_, prg1) -> 
@@ -312,6 +315,7 @@ let launch_inter prg debug =
                   let clot = Hashtbl.copy cloture in
                   add_cloture clot env;
                   interpreter (Fun(x,prg')) clot
+                  
                 else
                   begin
                     Printf.printf "Id: the key %s is not present in clots\n" ident;
@@ -358,27 +362,38 @@ let launch_inter prg debug =
                    interpreter x env
                    
     | Fun(id, prg') ->
-       let e = pop s in
-       if debug then
+       if not (empty s) then
          begin
-           Printf.printf "Pop value from stack: ";
-           print_prog e
-         end;
-       Hashtbl.add env id e;
-       let out = interpreter prg' env in
-       Hashtbl.remove env id;
-       out
+           let e = pop s in
+           if debug then
+             begin
+               Printf.printf "Pop value from stack: ";
+               print_prog e
+             end;
+           Hashtbl.add env id e;
+           let out = interpreter prg' env in
+           Hashtbl.remove env id;
+           out
+         end
+       else
+         prg
          
-    | Recfun(id,prg') -> let e = pop s in
-			 if debug then
-                           begin
-                             Printf.printf "Pop value from stack: ";
-                             print_prog e
-                           end;
-			 Hashtbl.add env id e;
-			 let out = interpreter prg' env in
-			 Hashtbl.remove env id;
-			 out
+    | Recfun(id,prg') ->
+       if not (empty s) then
+         begin
+           let e = pop s in
+           if debug then
+             begin
+               Printf.printf "Pop value from stack: ";
+               print_prog e
+             end;
+           Hashtbl.add env id e;
+           let out = interpreter prg' env in
+           Hashtbl.remove env id;
+           out
+         end
+       else
+         prg
 				
     | If(prg1, prg2, prg3) -> if debug then Printf.printf "If then else\n";
                               let prg1' = interpreter prg1 env in
