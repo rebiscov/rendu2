@@ -135,6 +135,7 @@ let rec print_prog' p =
 	| Ref(p1) -> 		printf "Ref(";
 						print_prog' p1;
 						printf ")";
+	| Refvalue(e)	-> printf "RefValue(%d)" (!e)
 	| Reassign(ident,p1) -> printf "Reassign(";
 						print_string ident;
 						printf ",";

@@ -51,7 +51,7 @@ let main () =
 			print_sedc s ;
 			execute s [] !debug;
 		else
-			print_string "the program is not compilable yet" 
+			print_string "the program is not compilable yet\n" 
 	else
 		()
 	;;
