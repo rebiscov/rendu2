@@ -28,10 +28,10 @@ rule token = parse    (* la "fonction" aussi s'appelle token *)
   | "!"		{ BANG }
   | ":="	{ REASSIGN }
   (* comp operators *)
-  | ">=" 	{ INFEQ }
-  | ">"  	{ INF }
-  | "<"  	{ GRE }
-  | "<=" 	{ GREEQ }
+  | "<=" 	{ INFEQ }
+  | "<"  	{ INF }
+  | ">"  	{ GRE }
+  | ">=" 	{ GREEQ }
   | "=" 	{ EQ }
   | "<>" 	{ NEQ }
   (* delimiters *)

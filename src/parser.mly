@@ -37,11 +37,11 @@ open Prog   (* ou on definit le type expression *)
 %nonassoc EXCEP
 /* reserved words */
 
-%left SEMI
 %nonassoc EOP
 
 %nonassoc LET
 %nonassoc IN
+%left SEMI
 %nonassoc IDENT
 
 

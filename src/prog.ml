@@ -5,7 +5,7 @@ type ident = string
 ;;
 
 type prog =
-        | Unit
+   | Unit
 	(* function definition *)
 	| Let of ident*prog*prog
 	| Fun of ident*prog
@@ -13,7 +13,6 @@ type prog =
 	(* exceptions *)
 	| Raise of int
 	| Try of prog*int*prog
-        | Error
 	(* references & imperative: *)
 	| Semi of prog*prog
 	| Ref of prog
@@ -22,6 +21,7 @@ type prog =
 	(* access *)	
 	| Id of ident
 	| Value of int
+	| Refvalue of int ref
 	(* operators : must fail if the prog is a function of arity >= 1 *)	
 	| Plus of prog*prog     
 	| Mult of prog*prog			(* not parsed yet *)
@@ -58,6 +58,7 @@ let bprint_prog p =
 let print_prog p = 
 let rec print_prog' p = 
 	match p with
+	| Unit			-> printf "Unit"
 	| Let(id,p1,p2) -> 	printf "Let(%s," id;
 						print_prog' p1;
 						printf ",";
@@ -151,7 +152,7 @@ let rec print_prog' p =
 						print_prog' p2;
 						print_string ")";
 	| Raise(e)		-> printf "Raise(%d)" e
-	| _ -> printf "$not impl$"
+	| _ -> printf "$not impl£$"
 in
 print_prog' p;
 printf "\n";;
