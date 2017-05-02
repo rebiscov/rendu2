@@ -4,10 +4,9 @@ open Printf
 open Utils
 
 let clots = Hashtbl.create 1000;;
-let s = new_queue();;
-let s1 = new_queue();;
+let s = new_stack();;
+let s1 = new_stack();;
 let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;;
-let last_env = ref env;;
 let trywith = new_stack();;
 let exn = ref (false, 0);;
   
@@ -162,7 +161,7 @@ let add_cloture clot env =
     | If(prg1, prg2, prg3) ->
        add_cloture_aux prg1; add_cloture_aux prg2; add_cloture_aux prg3
     | _ -> Printf.printf "add_cloture: following prog not supported:"; print_prog prg; exit 1 in
-  while not (empty_queue s1) do
+  while not (empty s1) do
     let prg = pop s1 in
     add_cloture_aux prg
   done;;
@@ -367,7 +366,7 @@ let launch_inter prg debug =
                     | (Value(x), Value(y)) -> if debug then Printf.printf "Non equality of %d and %d\n" x y;
                                               Value(0)
                     | _ -> Printf.printf "Not a comparison of integers !\n"; print_prog prga; print_prog prgb;
-                           if empty_stack trywith then exit 1
+                           if empty trywith then exit 1
                            else
                              begin
                                false_stack trywith; Error
