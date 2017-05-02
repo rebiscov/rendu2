@@ -7,7 +7,6 @@ let clots = Hashtbl.create 1000;;
 let s = new_stack();;
 let s1 = new_stack();;
 let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;;
-let trywith = new_stack();;
 let exn = ref (false, 0);;
   
 let make_cloture prg env funname debug =
@@ -78,8 +77,6 @@ let rec prepare_cloture prg =
      let prg1' = prepare_cloture prg1 in
      let prg2' = prepare_cloture prg2 in
      Try(prg1', n, prg2')
-  | Error ->
-     Error
   | Semi(prg1, prg2) ->
      let prg1' = prepare_cloture prg1 in
      let prg2' = prepare_cloture prg2 in
@@ -365,12 +362,8 @@ let launch_inter prg debug =
                                                          Value(1)
                     | (Value(x), Value(y)) -> if debug then Printf.printf "Non equality of %d and %d\n" x y;
                                               Value(0)
-                    | _ -> Printf.printf "Not a comparison of integers !\n"; print_prog prga; print_prog prgb;
-                           if empty trywith then exit 1
-                           else
-                             begin
-                               false_stack trywith; Error
-                             end
+                    | _ -> Printf.printf "Not a comparison of integers !\n"; print_prog prga; print_prog prgb; exit 1
+
                   end
                   
                   
