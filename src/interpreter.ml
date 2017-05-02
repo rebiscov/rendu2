@@ -3,10 +3,10 @@ open Hashtbl
 open Printf
 open Utils
 
-let clots = Hashtbl.create 1000;;
-let s = new_stack();;
-let s1 = new_stack();;
-let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;;
+let clots = Hashtbl.create 1000;; (* contient les clotures des fonctions *)
+let s = new_stack();; (* contient les arguments des fonctions *)
+let s1 = new_stack();; (* pareil *)
+let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;; (* environement contenant les variables, les fonctions *)
 let exn = ref (false, 0);;
   
 let make_cloture prg env funname debug = (* Fonction qui construit la cloture d'une fonction *)
@@ -145,14 +145,14 @@ let rec prepare_cloture prg = (* Fonction qui renome toutes les occurences d'un 
   | _ -> print_prog prg; failwith(": not supported in prepare_cloture")
 ;;
   
-let add_cloture clot env =
+let add_cloture clot env = (* Ajoute dans cloture tous les variables/fonctions contenus dans les arguments passés à la fonction en les renommant  *)
   let rec add_cloture_aux prg =
     match prg with
-    | Id(ident) ->
+    | Id(ident) | Bang(ident) ->
        if Hashtbl.mem env ident then
          begin
            let e = Hashtbl.find env ident in
-           Hashtbl.add clot ("_"^ident) e
+           Hashtbl.add clot ("_"^ident) e (* On renomme *)
          end
     | Let(_,prg1,prg2) | Plus(prg1,prg2) | Minus(prg1,prg2) | Mult(prg1,prg2) | App(prg1,prg2) | Eq(prg1, prg2) | Neq(prg1, prg2) | Smaller(prg1, prg2) | Smalleq(prg1, prg2) | Greater(prg1, prg2) | Greateq(prg1, prg2) | Semi(prg1, prg2) -> 
        add_cloture_aux prg1; add_cloture_aux prg2
@@ -335,7 +335,7 @@ let launch_inter prg debug =
 		
              | prg'' -> interpreter prg'' env
            end
-         else
+         else (* Si on ne connait id, on n'y touche pas *)
            begin
              if debug then Printf.printf "Id: warning: var not found %s\n" ident ;
              prg
@@ -362,7 +362,7 @@ let launch_inter prg debug =
                    interpreter x env
                    
     | Fun(id, prg') ->
-       if not (empty s) then
+       if not (empty s) then (* Si il y a des arguments dans la pile... *)
          begin
            let e = pop s in
            if debug then
@@ -474,7 +474,7 @@ let launch_inter prg debug =
     | Try(prg1, n, prg2) ->
        let prg1' = interpreter prg1 env in
        let (b, m) = !exn in
-       if b && m = n then
+       if b && m = n then (* Si il y a eu une exception et que c'est la bonne... *)
          begin
            exn := (false, 0);
            interpreter prg2 env
