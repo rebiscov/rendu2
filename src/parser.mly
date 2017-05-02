@@ -80,7 +80,7 @@ main:
 
 idents:
 	| 			{ [] }
-	| idents IDENT { $2 :: $1 }
+	| IDENT idents { $1 :: $2 }
 
 
 /* here func is used as a general function: it can either be an arity 0 function (a constant) or a regular function */
