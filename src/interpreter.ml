@@ -9,7 +9,7 @@ let s1 = new_stack();;
 let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;;
 let exn = ref (false, 0);;
   
-let make_cloture prg env funname debug =
+let make_cloture prg env funname debug = (* Fonction qui construit la cloture d'une fonction *)
   let vars = Hashtbl.create 100 in
   let clot = Hashtbl.create 100 in
   
@@ -26,7 +26,7 @@ let make_cloture prg env funname debug =
 	pas ses variables libres d'ou l'appel de findvar d'abord *)
   let rec findid prg =
     match prg with
-    | Id(id) ->
+    | Id(id) | Bang(id)->
        if debug then Printf.printf "  MC: treating %s..." id;
        if not (Hashtbl.mem vars id) then
          begin
@@ -40,9 +40,9 @@ let make_cloture prg env funname debug =
     | Let(_,prg1,prg2) | Plus(prg1,prg2) | Minus(prg1,prg2) | Mult(prg1,prg2) | App(prg1,prg2) | Eq(prg1, prg2) | Neq(prg1, prg2) | Smaller(prg1, prg2) | Smalleq(prg1, prg2) | Greater(prg1, prg2) | Greateq(prg1, prg2) | Semi(prg1, prg2) -> 
        findid prg1;
        findid prg2
-    | Fun(_,prg1) | Recfun(_, prg1) -> 
+    | Fun(_,prg1) | Recfun(_, prg1) | Ref(prg1) | Reassign(_, prg1) -> 
        findid prg1
-    | Value(_) | Print -> ()
+    | Value(_) | Print  -> ()
     | If(prg1, prg2, prg3) ->
        findid prg1;
        findid prg2;
@@ -59,7 +59,7 @@ let make_cloture prg env funname debug =
   findid prg;
   clot;;
 
-let rec prepare_cloture prg =
+let rec prepare_cloture prg = (* Fonction qui renome toutes les occurences d'un id en _id, ce qui permet de ne pas avoir de collisions lorsque q'une fonction prend en argument une fonction *)
   match prg with
   | Let(ident, prg1, prg2) ->
      let prg1' = prepare_cloture prg1 in
@@ -234,7 +234,7 @@ let launch_inter prg debug =
        Ref(interpreter prg' env)
        
     | Bang(ident) ->
-       if debug then Printf.printf "Bang:";
+       if debug then Printf.printf "Bang '%s':" ident;
        let r = Hashtbl.find env ident in
        begin
          match r with
@@ -300,7 +300,7 @@ let launch_inter prg debug =
                 
     | Id(ident) ->
        begin
-         if Hashtbl.mem env ident then
+         if Hashtbl.mem env ident then (* Si on connait l'id... *)
            begin
 	     let p = Hashtbl.find env ident in
              if debug then 
@@ -308,7 +308,7 @@ let launch_inter prg debug =
 		 Printf.printf "Id: changing id '%s' for prog: " ident;
              	 print_prog p
 	       end;
-	     match p with
+	     match p with (* et si cet id est une fonction, on change d'environement *)
              | Fun(x,prg')->
 	        if Hashtbl.mem clots ident then
                   let cloture = Hashtbl.find clots ident in
@@ -318,7 +318,7 @@ let launch_inter prg debug =
                   
                 else
                   begin
-                    Printf.printf "Id: the key %s is not present in clots\n" ident;
+                    if debug then Printf.printf "Id: the key %s is not present in clots\n" ident;
                     interpreter p env
                   end
 	     | Recfun(x,prg') ->
@@ -342,7 +342,7 @@ let launch_inter prg debug =
            end
        end
        
-    | App(Print, x) -> let prg' = interpreter x env in
+    | App(Print, x) -> let prg' = interpreter x env in (* Utile seulement pour Print, print est considéré comme une fonction *)
                        begin
                          match prg' with
                          | Value(a) -> Printf.printf "prInt %d\n" a;
@@ -351,7 +351,7 @@ let launch_inter prg debug =
 
                        end
                        
-    | App(x, p) -> if debug then
+    | App(x, p) -> if debug then (* On applique une fonction, on met les arguments dans la pile *)
                      begin 
                        Printf.printf "App: pushing in the queue: ";
                        print_prog p
