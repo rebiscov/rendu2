@@ -21,15 +21,11 @@ Projet 2
 (exple: ./fouine -i -d test.ml)
 * a propos des opérations booleenes, c'etait en fait un choix d'en faire des operations renvoyant des entiers, pour que cela reste coherent avec le reste du code... comme cela marche bien on ne l'a pas changé. 
 
+## A propos du rendu 3:
+* ajout du ; imperatif a la syntaxe (cf references.ml)
+* ajout des exceptions (cf exceptions.ml, factplus.ml)
 
+* ajout de la machine sedc pour les expressions arithmetiques (cf arith.ml) [compilation + execution]
 
-* fix du shift reduce conflict (juste une priorité manquante qui n'avait pas été push sur la dernière version)
-* JD: fix du format (/!\ pas sur d'avoir fini, a retravailler...)
-* JD: rendre le code propre (comment de merde qui trainent)
-* VR: interpreter toujours une fonction avant de la push dans l'environnement
-* 
-
-
-## Fonctionnalites
 
 

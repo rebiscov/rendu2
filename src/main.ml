@@ -15,14 +15,17 @@ let main () =
 	let inter = ref false in
 	let debug = ref false in
 	let sedc = ref false in
+	let interm = ref false in
 	let filename = ref "" in
 	for i = 1 to Array.length Sys.argv -1 do
 		if Sys.argv.(i).[0] <> '-' then
 			filename := Sys.argv.(i)
 		else
+		if Sys.argv.(i) = "-interm" then
+			interm := true
+		else
 		if Sys.argv.(i) = "--interpreter" || Sys.argv.(i) = "-i" then 
 			inter := true
-
 		else 
 		if Sys.argv.(i) = "-debug" || Sys.argv.(i) = "-d" then 
 			debug := true
@@ -31,29 +34,32 @@ let main () =
 			sedc := true
 		else ()
 	done;
-	if !inter then 
-		if !filename = "" then
+	if !sedc then 
 			begin
-			let prog = parse_from_stdin() in
-			print_prog prog; 
-			print_prog (launch_inter prog (!debug))
+			let prog = if !filename = "" then parse_from_stdin() else parse (!filename) in
+			if is_compilable prog then
+				let s = compile prog in
+				print_sedc s ;
+				execute s [] !debug;
+			else
+				print_string "the program is not compilable yet\n" 
 			end
-		else
+	else if !interm then
 			begin
-			let prog = parse (!filename) in 
-			print_prog prog; 
-			print_prog (launch_inter prog (!debug))
+			let prog = if !filename = "" then parse_from_stdin() else parse (!filename) in
+			if is_compilable prog then
+				let s = compile prog in
+				print_sedc s ;
+			else
+				print_string "the program is not compilable yet\n" 
 			end
-	else if !sedc then 
-		let prog = parse_from_stdin() in
-		if is_compilable prog then
-			let s = compile prog in
-			print_sedc s ;
-			execute s [] !debug;
-		else
-			print_string "the program is not compilable yet\n" 
+
 	else
-		()
+			begin
+			let prog = if !filename = "" then parse_from_stdin() else parse (!filename) in
+			print_prog prog; 
+			print_prog (launch_inter prog (!debug))
+			end
 	;;
 
 
