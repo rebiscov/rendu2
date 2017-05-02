@@ -431,7 +431,7 @@ let launch_inter prg debug =
     | Raise(n) -> if debug then
                     Printf.printf "Raise: raising exception '%d'\n" n;
                   exn := (true, n);
-                  Unit
+                  prg
                   
 
     | _ -> print_prog prg; failwith("Not supported yet")
