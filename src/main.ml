@@ -37,17 +37,17 @@ let main () =
 	if !sedc then 
 			begin
 			let prog = if !filename = "" then parse_from_stdin() else parse (!filename) in
-			if is_compilable prog then
+			if is_compilable prog [] then
 				let s = compile prog in
 				print_sedc s ;
-				execute s [] !debug;
+				execute s [] [] !debug;
 			else
 				print_string "the program is not compilable yet\n" 
 			end
 	else if !interm then
 			begin
 			let prog = if !filename = "" then parse_from_stdin() else parse (!filename) in
-			if is_compilable prog then
+			if is_compilable prog [] then
 				let s = compile prog in
 				print_sedc s ;
 			else

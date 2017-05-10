@@ -17,6 +17,7 @@ rule token = parse    (* la "fonction" aussi s'appelle token *)
   | "then" { THEN }
   | "else" { ELSE }
   | "print" { PRINT }
+  | "prInt" { PRINT }
   | "fun"	{ FUN }
   | "ref" 	{ REF }
   | "try"	{ TRY }
