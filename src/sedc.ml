@@ -1,3 +1,4 @@
+
 open Printf
 open Utils
 open Prog
@@ -83,16 +84,16 @@ let rec prepare_jit p env=
 						else
 							(Recfun(id,p1'),false)
 	| Raise(n)		-> 	(Raise(n),false)
-	| Try(p1,n,p2)	->	let (p1',c1) = prepare_jit p1 env in
+	| Try(p1,p2)	->	let (p1',c1) = prepare_jit p1 env in
 						let (p2',c2) = prepare_jit p2 env in
 						if c1 && c2 then
-							(Try(JIT(p1'),n,JIT(p2')),false)
+							(Try(JIT(p1'),JIT(p2')),false)
 						else if c1 then
-							(Try(JIT(p1'),n,p2'),false)
+							(Try(JIT(p1'),p2'),false)
 						else if c2 then
-							(Try(p1',n,JIT(p2')),false)
+							(Try(p1',JIT(p2')),false)
 						else
-							(Try(p1',n,p2'),false)
+							(Try(p1',p2'),false)
 	| Semi(p1,p2)	->	let (p1',c1) = prepare_jit p1 env in
 						let (p2',c2) = prepare_jit p2 env in
 						if c1 && c2 then

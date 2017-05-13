@@ -14,7 +14,7 @@ type prog =
 	| Recfun of ident*prog
 	(* exceptions *)
 	| Raise of int
-	| Try of prog*int*prog
+	| Try of prog*prog
 	(* references & imperative: *)
 	| Semi of prog*prog
 	| Ref of prog
@@ -140,9 +140,9 @@ let rec print_prog' p =
 						print_string ",";
 						print_prog' p2;
 						print_string ")";
-	| Try(p1,e,p2)	->	print_string "Try(";
+	| Try(p1,p2)	->	print_string "Try(";
 						print_prog' p1;
-						printf ",%d," e;
+						printf ",";
 						print_prog' p2;
 						print_string ")";
 	| Raise(e)		-> printf "Raise(%d)" e
