@@ -6,7 +6,6 @@ open Sedc
 
 let clots = Hashtbl.create 1000;; (* contient les clotures des fonctions *)
 let s = new_stack();; (* contient les arguments des fonctions *)
-let s1 = new_stack();; (* pareil *)
 let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;; (* environement contenant les variables, les fonctions *)
 let exn = ref (false, 0);;
   
@@ -59,126 +58,20 @@ let make_cloture prg env funname debug = (* Fonction qui construit la cloture d'
   findvar prg;
   findid prg;
   clot;;
-
-let rec prepare_cloture prg = (* Fonction qui renome toutes les occurences d'un id en _id, ce qui permet de ne pas avoir de collisions lorsque q'une fonction prend en argument une fonction *)
-  match prg with
-  | Let(ident, prg1, prg2) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     Let("_"^ident, prg1', prg2')
-  | Fun(ident, prg') ->
-     let prg'' = prepare_cloture prg' in
-     Fun("_"^ident, prg'')
-  | Recfun(ident, prg') ->
-     let prg'' = prepare_cloture prg' in
-     Recfun("_"^ident, prg'')
-  | Raise(n) ->
-     prg
-  | Try(prg1, n, prg2) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     Try(prg1', n, prg2')
-  | Semi(prg1, prg2) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     Semi(prg1', prg2')
-  | Ref(prg') ->
-     let prg'' = prepare_cloture prg' in
-     Ref(prg'')
-  | Bang(ident) ->
-     Bang("_"^ident)
-  | Reassign(ident, prg') ->
-     let prg'' = prepare_cloture prg' in
-     Reassign("_"^ident, prg'')
-  | Id(ident) ->
-     Id("_"^ident)
-  | Value(n) ->
-     prg
-  | Plus(prg1, prg2) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     Plus(prg1', prg2')
-  | Mult(prg1, prg2) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     Mult(prg1', prg2')     
-  | Minus(prg1, prg2) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     Minus(prg1', prg2')     
-  | Eq(prg1, prg2) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     Eq(prg1', prg2')     
-  | Neq(prg1, prg2) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     Neq(prg1', prg2')     
-  | Greater(prg1, prg2) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     Greater(prg1', prg2')     
-  | Greateq(prg1, prg2) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     Greateq(prg1', prg2')     
-  | Smaller(prg1, prg2) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     Smaller(prg1', prg2')     
-  | Smalleq(prg1, prg2) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     Smalleq(prg1', prg2')     
-  | App(prg1, prg2) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     App(prg1', prg2')     
-  | If(prg1, prg2, prg3) ->
-     let prg1' = prepare_cloture prg1 in
-     let prg2' = prepare_cloture prg2 in
-     let prg3' = prepare_cloture prg3 in
-     If(prg1', prg2', prg3')
-  | Print ->
-     prg
-  | Unit ->
-     prg
-  | _ -> print_prog prg; failwith(": not supported in prepare_cloture")
-;;
   
-let add_cloture clot env = (* Ajoute dans cloture tous les variables/fonctions contenus dans les arguments passés à la fonction en les renommant  *)
-  let rec add_cloture_aux prg =
-    match prg with
-    | Id(ident) | Bang(ident) ->
-       if Hashtbl.mem env ident then
-         begin
-           let e = Hashtbl.find env ident in
-           Hashtbl.add clot ("_"^ident) e (* On renomme *)
-         end
-    | Let(_,prg1,prg2) | Plus(prg1,prg2) | Minus(prg1,prg2) | Mult(prg1,prg2) | App(prg1,prg2) | Eq(prg1, prg2) | Neq(prg1, prg2) | Smaller(prg1, prg2) | Smalleq(prg1, prg2) | Greater(prg1, prg2) | Greateq(prg1, prg2) | Semi(prg1, prg2) -> 
-       add_cloture_aux prg1; add_cloture_aux prg2
-    | Fun(_,prg1) | Recfun(_, prg1) -> 
-       add_cloture_aux prg1
-    | Value(_) | Print -> ()
-    | If(prg1, prg2, prg3) ->
-       add_cloture_aux prg1; add_cloture_aux prg2; add_cloture_aux prg3
-    | _ -> Printf.printf "add_cloture: following prog not supported:"; print_prog prg; exit 1 in
-  while not (empty s1) do
-    let prg = pop s1 in
-    add_cloture_aux prg
-  done;;
-  
-
 let launch_inter prg debug =
   let debugger e p = if debug then begin print_string e; print_prog p end;
   in 
   let rec interpreter prg env =
+    print_prog prg;
     match prg with
-    | JIT(p1)	-> 	debugger "launching sedc for: \n" p1;
-					let s = compile p1 in
-					let v = execute s debug in
-					Value(v)
-	| Let(name, Fun(id, prg1), prg2) -> 
+    | JIT(p1)	->
+       debugger "launching sedc for: \n" p1;
+       let s = compile p1 in
+       let v = execute s debug in
+       Value(v)
+       
+    | Let(name, Fun(id, prg1), prg2) -> 
        let f = Fun(id,prg1) in
        debugger ("Let: defining fun :"^name^" = ") f ;
 
@@ -317,10 +210,7 @@ let launch_inter prg debug =
              | Fun(x,prg')->
 	        if Hashtbl.mem clots ident then
                   let cloture = Hashtbl.find clots ident in
-                  let clot = Hashtbl.copy cloture in
-                  add_cloture clot env;
-                  interpreter (Fun(x,prg')) clot
-                  
+                  interpreter (Fun(x,prg')) cloture
                 else
                   begin
                     if debug then Printf.printf "Id: the key %s is not present in clots\n" ident;
@@ -329,9 +219,7 @@ let launch_inter prg debug =
 	     | Recfun(x,prg') ->
 	        if Hashtbl.mem clots ident then
                   let cloture = Hashtbl.find clots ident in
-                  let clot = Hashtbl.copy cloture in
-                  add_cloture clot env;
-                  interpreter (Recfun(x,prg')) clot
+                  interpreter (Recfun(x,prg')) cloture
                 else
                   begin
                     Printf.printf "Id: the key %s is not present in clots\n" ident;
@@ -356,15 +244,15 @@ let launch_inter prg debug =
 
                        end
                        
-    | App(x, p) -> if debug then (* On applique une fonction, on met les arguments dans la pile *)
-                     begin 
-                       Printf.printf "App: pushing in the queue: ";
-                       print_prog p
-                     end ;
-                   let p_clean = interpreter p env in
-		   push s (prepare_cloture p_clean);
-                   push s1 p_clean;
-                   interpreter x env
+    | App(x, p) ->
+       let p_clean = interpreter p env in
+       if debug then (* On applique une fonction, on met les arguments dans la pile *)
+         begin 
+           Printf.printf "App: pushing in the queue: ";
+           print_prog p_clean
+         end ;
+       push s p_clean;
+       interpreter x env
                    
     | Fun(id, prg') ->
        if not (empty s) then (* Si il y a des arguments dans la pile... *)
@@ -376,12 +264,18 @@ let launch_inter prg debug =
                print_prog e
              end;
            Hashtbl.add env id e;
+           
            let out = interpreter prg' env in
            Hashtbl.remove env id;
+           
            out
          end
        else
-         prg
+         begin
+           let out = Fun(id,(interpreter prg' env)) in
+           out
+         end
+       
          
     | Recfun(id,prg') ->
        if not (empty s) then
