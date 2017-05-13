@@ -5,7 +5,6 @@ open Utils
 open Sedc
 
 let clots = Hashtbl.create 1000;; (* contient les clotures des fonctions *)
-let s = new_stack();; (* contient les arguments des fonctions *)
 let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;; (* environement contenant les variables, les fonctions *)
 let exn = ref (false, 0);;
   
@@ -62,8 +61,7 @@ let make_cloture prg env funname debug = (* Fonction qui construit la cloture d'
 let launch_inter prg debug =
   let debugger e p = if debug then begin print_string e; print_prog p end;
   in 
-  let rec interpreter prg env =
-    print_prog prg;
+  let rec interpreter prg env s=
     match prg with
     | JIT(p1)	->
        debugger "launching sedc for: \n" p1;
@@ -78,7 +76,7 @@ let launch_inter prg debug =
        let clot = make_cloture f env name debug in
        Hashtbl.add env name f;
        Hashtbl.add clots name clot;
-       let out = interpreter prg2 env in
+       let out = interpreter prg2 env s in
        Hashtbl.remove env name;
        Hashtbl.remove clots name;
 
@@ -93,7 +91,7 @@ let launch_inter prg debug =
        Hashtbl.add env name f;
        Hashtbl.add clot name f;
        Hashtbl.add clots name clot;
-       let out = interpreter prg2 env in
+       let out = interpreter prg2 env s in
        
        debugger ("Let: removing recfun "^name^" = ") f;
        Hashtbl.remove env name;
@@ -101,7 +99,7 @@ let launch_inter prg debug =
        out
 
     | Let(name, Ref(prg1), prg2) -> 
-       let prg1' = interpreter prg1 env in
+       let prg1' = interpreter prg1 env s in
        let n =
          begin
            match prg1' with
@@ -112,7 +110,7 @@ let launch_inter prg debug =
        debugger ("Let: defining ref :"^name^" = ") (Ref(prg1));
 
        Hashtbl.add env name (Refvalue(ref n));
-       let out = interpreter prg2 env in
+       let out = interpreter prg2 env s in
 
        debugger ("Let: removing reference "^name^" = ") (Ref(prg1));
        Hashtbl.remove env name;
@@ -121,15 +119,15 @@ let launch_inter prg debug =
 
     | Let(name, prg1, prg2) -> 
        debugger ("Let: defining var : "^name^" = ") prg1;
-       let prg1' = interpreter prg1 env in
+       let prg1' = interpreter prg1 env s in
        Hashtbl.add env name prg1';
-       let prg2' = interpreter prg2 env in
+       let prg2' = interpreter prg2 env s in
        Hashtbl.remove env name;
        debugger ("Let: deleting var "^name^" = ") prg1;
        prg2'
 
     | Ref(prg') ->
-       Ref(interpreter prg' env)
+       Ref(interpreter prg' env s)
        
     | Bang(ident) ->
        if debug then Printf.printf "Bang '%s':" ident;
@@ -142,7 +140,7 @@ let launch_inter prg debug =
 
     | Reassign(ident, prg') ->
        if debug then Printf.printf "Reassign:";
-       let prg'' = interpreter prg' env in
+       let prg'' = interpreter prg' env s in
        let n = 
          begin
            match prg'' with
@@ -161,8 +159,8 @@ let launch_inter prg debug =
        end
          
        
-    | Plus(prg1, prg2) -> let prg1' = interpreter prg1 env in
-                          let prg2' = interpreter prg2 env in
+    | Plus(prg1, prg2) -> let prg1' = interpreter prg1 env s in
+                          let prg2' = interpreter prg2 env s in
                           begin
                             match (prg1', prg2') with
                             | (Value(a), Value(b)) -> if debug then Printf.printf "Adding %d and %d\n" a b;
@@ -172,8 +170,8 @@ let launch_inter prg debug =
                                (Plus(prg1', prg2'))
                           end
 
-    | Minus(prg1, prg2) -> let prg1' = interpreter prg1 env in
-                           let prg2' = interpreter prg2 env in
+    | Minus(prg1, prg2) -> let prg1' = interpreter prg1 env s in
+                           let prg2' = interpreter prg2 env s in
                            begin
                              match (prg1', prg2') with
                              | (Value(a), Value(b)) -> if debug then Printf.printf "Substracting %d and %d\n" a b;
@@ -183,8 +181,8 @@ let launch_inter prg debug =
                                (Minus(prg1', prg2'))
                            end                                                          
                            
-    | Mult(prg1, prg2) -> let prg1' = interpreter prg1 env in
-                          let prg2' = interpreter prg2 env in
+    | Mult(prg1, prg2) -> let prg1' = interpreter prg1 env s in
+                          let prg2' = interpreter prg2 env s in
                           begin
                             match (prg1', prg2') with
                             | (Value(a), Value(b)) -> if debug then Printf.printf "Multiplicating %d and %d\n" a b;
@@ -210,23 +208,23 @@ let launch_inter prg debug =
              | Fun(x,prg')->
 	        if Hashtbl.mem clots ident then
                   let cloture = Hashtbl.find clots ident in
-                  interpreter (Fun(x,prg')) cloture
+                  interpreter (Fun(x,prg')) cloture s
                 else
                   begin
                     if debug then Printf.printf "Id: the key %s is not present in clots\n" ident;
-                    interpreter p env
+                    interpreter p env s
                   end
 	     | Recfun(x,prg') ->
 	        if Hashtbl.mem clots ident then
                   let cloture = Hashtbl.find clots ident in
-                  interpreter (Recfun(x,prg')) cloture
+                  interpreter (Recfun(x,prg')) cloture s
                 else
                   begin
                     Printf.printf "Id: the key %s is not present in clots\n" ident;
-                    interpreter p env
+                    interpreter p env s
                   end                
 		
-             | prg'' -> interpreter prg'' env
+             | prg'' -> interpreter prg'' env s
            end
          else (* Si on ne connait id, on n'y touche pas *)
            begin
@@ -235,7 +233,7 @@ let launch_inter prg debug =
            end
        end
        
-    | App(Print, x) -> let prg' = interpreter x env in (* Utile seulement pour Print, print est considéré comme une fonction *)
+    | App(Print, x) -> let prg' = interpreter x env s in (* Utile seulement pour Print, print est considéré comme une fonction *)
                        begin
                          match prg' with
                          | Value(a) -> Printf.printf "prInt %d\n" a;
@@ -245,14 +243,14 @@ let launch_inter prg debug =
                        end
                        
     | App(x, p) ->
-       let p_clean = interpreter p env in
+       let p_clean = interpreter p env (new_stack()) in
        if debug then (* On applique une fonction, on met les arguments dans la pile *)
          begin 
            Printf.printf "App: pushing in the queue: ";
            print_prog p_clean
          end ;
        push s p_clean;
-       interpreter x env
+       interpreter x env s
                    
     | Fun(id, prg') ->
        if not (empty s) then (* Si il y a des arguments dans la pile... *)
@@ -265,14 +263,13 @@ let launch_inter prg debug =
              end;
            Hashtbl.add env id e;
            
-           let out = interpreter prg' env in
+           let out = interpreter prg' env s in
            Hashtbl.remove env id;
-           
            out
          end
        else
          begin
-           let out = Fun(id,(interpreter prg' env)) in
+           let out = Fun(id,(interpreter prg' env s))in
            out
          end
        
@@ -287,7 +284,7 @@ let launch_inter prg debug =
                print_prog e
              end;
            Hashtbl.add env id e;
-           let out = interpreter prg' env in
+           let out = interpreter prg' env s in
            Hashtbl.remove env id;
            out
          end
@@ -295,21 +292,21 @@ let launch_inter prg debug =
          prg
 				
     | If(prg1, prg2, prg3) -> if debug then Printf.printf "If then else\n";
-                              let prg1' = interpreter prg1 env in
+                              let prg1' = interpreter prg1 env s in
                               if debug then Printf.printf "End condition\n";
                               if prg1' = (Value(1)) then
                                 begin if debug then
                                         Printf.printf "In if\n";
-                                      interpreter prg2 env
+                                      interpreter prg2 env s
                                 end
                               else
                                 begin
                                   if debug then Printf.printf "In else\n";
-                                  interpreter prg3 env
+                                  interpreter prg3 env s
                                 end
 
-    | Eq(a, b) -> let prga = interpreter a env in
-                  let prgb = interpreter b env in
+    | Eq(a, b) -> let prga = interpreter a env s in
+                  let prgb = interpreter b env s in
                   begin
                     match (prga, prgb) with
                     | (Value(x), Value(y)) when x = y -> if debug then Printf.printf "Equality of %d and %d\n" x y;
@@ -321,8 +318,8 @@ let launch_inter prg debug =
                   end
                   
                   
-    | Neq(a, b) -> let prga = interpreter a env in
-                   let prgb = interpreter b env in
+    | Neq(a, b) -> let prga = interpreter a env s in
+                   let prgb = interpreter b env s in
                    begin
                      match (prga, prgb) with
                      | (Value(x), Value(y)) when x <> y -> if debug then Printf.printf "Non equality of %d and %d\n" x y;
@@ -330,8 +327,8 @@ let launch_inter prg debug =
                      | _ -> Value(0)
                    end
 
-    | Greater(a, b) -> let prga = interpreter a env in
-                       let prgb = interpreter b env in
+    | Greater(a, b) -> let prga = interpreter a env s in
+                       let prgb = interpreter b env s in
                        begin
                          match (prga, prgb) with
                          | (Value(x), Value(y)) when x > y -> if debug then Printf.printf "%d is greater than %d\n" x y;
@@ -339,8 +336,8 @@ let launch_inter prg debug =
                          | _ -> Value(0)
                        end
 
-    | Greateq(a, b) -> let prga = interpreter a env in
-                       let prgb = interpreter b env in
+    | Greateq(a, b) -> let prga = interpreter a env s in
+                       let prgb = interpreter b env s in
                        begin
                          match (prga, prgb) with
                          | (Value(x), Value(y)) when x >= y -> if debug then Printf.printf "%d is greater of or equals than %d\n" x y;
@@ -348,8 +345,8 @@ let launch_inter prg debug =
                          | _ -> Value(0)
                        end
 
-    | Smaller(a, b) -> let prga = interpreter a env in
-                       let prgb = interpreter b env in
+    | Smaller(a, b) -> let prga = interpreter a env s in
+                       let prgb = interpreter b env s in
                        begin
                          match (prga, prgb) with
                          | (Value(x), Value(y)) when x < y -> if debug then Printf.printf "%d is smaller than %d" x y;
@@ -357,8 +354,8 @@ let launch_inter prg debug =
                          | _ -> Value(0)
                        end                                              
 
-    | Smalleq(a, b) -> let prga = interpreter a env in
-                       let prgb = interpreter b env in
+    | Smalleq(a, b) -> let prga = interpreter a env s in
+                       let prgb = interpreter b env s in
                        begin
                          match (prga, prgb) with
                          | (Value(x), Value(y)) when x <= y -> if debug then Printf.printf "%d is smaller or equals than %d" x y;
@@ -368,17 +365,17 @@ let launch_inter prg debug =
                        
     | Semi(prg1 ,prg2) ->
 		debugger "applying first instruction of semi\n" prg1;
-       let _ = interpreter prg1 env in
+       let _ = interpreter prg1 env s in
 	   	debugger "applying second instruction of semi\n" prg2;
-       interpreter prg2 env
+       interpreter prg2 env s
 
     | Try(prg1, n, prg2) ->
-       let prg1' = interpreter prg1 env in
+       let prg1' = interpreter prg1 env s in
        let (b, m) = !exn in
        if b && m = n then (* Si il y a eu une exception et que c'est la bonne... *)
          begin
            exn := (false, 0);
-           interpreter prg2 env
+           interpreter prg2 env s
          end
        else
          prg1'
@@ -392,5 +389,5 @@ let launch_inter prg debug =
 
     | _ -> print_prog prg; failwith("Not supported yet")
   in
-  interpreter prg env ;;
+  interpreter prg env (new_stack());;
 
