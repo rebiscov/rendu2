@@ -5,7 +5,9 @@ type ident = string
 ;;
 
 type prog =
-   | Unit
+   	| Unit
+   	(* just-in-time: token saying that this part of code can be executed by the sedc *)
+   	| JIT of prog
 	(* function definition *)
 	| Let of ident*prog*prog
 	| Fun of ident*prog
@@ -43,22 +45,13 @@ type prog =
 	| Print
 ;;
 
-(* if i have time, can do a beauty printer of prog with line switches and indentation *)
-let rec print_tabs n = 
-	match n with
-	| 0 -> ()
-	| _ -> 	printf "  "; 
-			print_tabs (n-1)
-;;
-
-let bprint_prog p = 
-	printf "$not implemented$"
-;;
-
 let print_prog p = 
 let rec print_prog' p = 
 	match p with
-	| Unit			-> printf "Unit"
+	| Unit			-> 	printf "Unit"
+	| JIT(p1)		-> 	printf "Just-in-time(";
+						print_prog' p1;
+						printf ")";
 	| Let(id,p1,p2) -> 	printf "Let(%s," id;
 						print_prog' p1;
 						printf ",";

@@ -34,31 +34,32 @@ let main () =
 			sedc := true
 		else ()
 	done;
+	
+	let p = if !filename = "" then parse_from_stdin() else parse (!filename) in
+
 	if !sedc then 
 			begin
-			let prog = if !filename = "" then parse_from_stdin() else parse (!filename) in
-			if is_compilable prog [] then
-				let s = compile prog in
-				print_sedc s ;
-				execute s [] [] !debug;
-			else
-				print_string "the program is not compilable yet\n" 
+			let p' = prepare_jit p in    (* we prepare it*)
+			let result = launch_inter p' (!debug) in
+			print_string "result of the interpreter: \n";
+			print_prog result;
 			end
+
+
 	else if !interm then
 			begin
-			let prog = if !filename = "" then parse_from_stdin() else parse (!filename) in
-			if is_compilable prog [] then
-				let s = compile prog in
-				print_sedc s ;
+			if is_compilable p [] then
+				let s = compile p in
+				print_sedc s 
 			else
 				print_string "the program is not compilable yet\n" 
 			end
 
 	else
 			begin
-			let prog = if !filename = "" then parse_from_stdin() else parse (!filename) in
-			print_prog prog; 
-			print_prog (launch_inter prog (!debug))
+			print_prog p; 
+			let r = (launch_inter p (!debug)) in
+			print_prog r
 			end
 	;;
 

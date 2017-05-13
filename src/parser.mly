@@ -30,6 +30,7 @@ open Prog   (* ou on definit le type expression *)
 %nonassoc REF FUN
 
 
+%left SEMI
 /* exceptions */
 %nonassoc RAISE
 %nonassoc TRY
@@ -41,7 +42,6 @@ open Prog   (* ou on definit le type expression *)
 
 %nonassoc LET
 %nonassoc IN
-%left SEMI
 %nonassoc IDENT
 
 
@@ -120,7 +120,8 @@ prog:
 	| REF prog									{ Ref($2) }
 	| IF comp THEN prog ELSE prog  				{ If($2,$4,$6) }
 	| TRY prog WITH EXCEP VALUE ARROW prog		{ Try($2,$5,$7) }
-	| RAISE EXCEP VALUE							{ Raise($3) }
+	| RAISE EXCEP VALUE 						{ Raise($3) }
+	
 ;
 
 

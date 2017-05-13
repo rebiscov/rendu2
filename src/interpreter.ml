@@ -2,6 +2,7 @@ open Prog
 open Hashtbl
 open Printf
 open Utils
+open Sedc
 
 let clots = Hashtbl.create 1000;; (* contient les clotures des fonctions *)
 let s = new_stack();; (* contient les arguments des fonctions *)
@@ -173,7 +174,11 @@ let launch_inter prg debug =
   in 
   let rec interpreter prg env =
     match prg with
-    | Let(name, Fun(id, prg1), prg2) -> 
+    | JIT(p1)	-> 	debugger "launching sedc for: \n" p1;
+					let s = compile p1 in
+					let v = execute s debug in
+					Value(v)
+	| Let(name, Fun(id, prg1), prg2) -> 
        let f = Fun(id,prg1) in
        debugger ("Let: defining fun :"^name^" = ") f ;
 
@@ -468,7 +473,9 @@ let launch_inter prg debug =
                        end
                        
     | Semi(prg1 ,prg2) ->
+		debugger "applying first instruction of semi\n" prg1;
        let _ = interpreter prg1 env in
+	   	debugger "applying second instruction of semi\n" prg2;
        interpreter prg2 env
 
     | Try(prg1, n, prg2) ->

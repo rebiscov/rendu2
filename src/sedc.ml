@@ -35,6 +35,8 @@ let rec print_sedc s =
 		print_sedc xs
 ;;
 
+
+
 let rec access x env =
 	match env with
 	| (y,v)::env' -> if y=x then (true,v)
@@ -55,6 +57,68 @@ let rec is_compilable p env=
 	| _ ->	 false
 
 ;;
+let prepare_jit p =
+let rec prepare_jit p env=
+	match p with
+	| Unit -> (p,false)
+	| JIT(p1)	-> (p,true)
+	| Let(id,p1,p2) -> 	let (p1',c1) = prepare_jit p1 env in
+					   	let (p2',c2) = prepare_jit p2 ((id,0)::env)in
+					   	if c1 && c2 then
+					   		(Let(id,p1',p2'),true)
+						else if c1 then
+							(Let(id,JIT(p1'),p2'),false)
+						else if c2 then
+							(Let(id,p1',JIT(p2')),false)
+						else
+							(Let(id,p1',p2'),false)
+	| Fun(id,p1)	-> 	let (p1',c1) = prepare_jit p1 env in
+						if c1 then
+							(Fun(id,JIT(p1')),false)
+						else
+							(Fun(id,p1'),false)
+	| Recfun(id,p1)	->	let (p1',c1) = prepare_jit p1 env in
+						if c1 then
+							(Recfun(id,JIT(p1')),false)
+						else
+							(Recfun(id,p1'),false)
+	| Raise(n)		-> 	(Raise(n),false)
+	| Try(p1,n,p2)	->	let (p1',c1) = prepare_jit p1 env in
+						let (p2',c2) = prepare_jit p2 env in
+						if c1 && c2 then
+							(Try(JIT(p1'),n,JIT(p2')),false)
+						else if c1 then
+							(Try(JIT(p1'),n,p2'),false)
+						else if c2 then
+							(Try(p1',n,JIT(p2')),false)
+						else
+							(Try(p1',n,p2'),false)
+	| Semi(p1,p2)	->	let (p1',c1) = prepare_jit p1 env in
+						let (p2',c2) = prepare_jit p2 env in
+						if c1 && c2 then
+							(Semi(JIT(p1'),JIT(p2')),false)
+						else if c1 then
+							(Semi(JIT(p1'),p2'),false)
+						else if c2 then
+							(Semi(p1',JIT(p2')),false)
+						else
+							(Semi(p1',p2'),false)
+	| Value(n)		->	(Value(n),true)
+	| Id(id)		-> let (b,_) = access id env in
+						if b then 
+							(Id(id),true)
+						else
+							(Id(id),false)
+	| _	-> raise (Failure "foo")
+in
+let (p',c) = prepare_jit p [] in
+if c then 
+	JIT(p') 
+else 
+	p'
+;;
+							
+					     
 
 (* ... *)
 let rec compile p = 
@@ -76,13 +140,15 @@ let apply x s d env debug =
 	match x with
 	| LET(id)		-> begin
 							match d with
-							| CONST(a)::d' -> (s,d',(id,a)::env)
+							| CONST(a)::d' ->  	if debug then printf "adding %s to the env with value %d\n" id a;
+												(s,d',(id,a)::env)	
 							| _	-> printf "empty stack error";exit 1
 							end
 
 	| ENDLET		-> begin
 						match env with
-						| e::env' -> (s,d,env') 
+						| (id,v)::env' -> 	if debug then printf  "removing %s from env\n" id; 
+											(s,d,env') 
 						| _ ->	printf "environement error";exit 1
 						end
 
@@ -129,12 +195,15 @@ let apply x s d env debug =
 ;;
 
 (* the execution: while the stack s is not empty, we apply it, if s is empty and d is not then there was a problem else we print the output *)
+let execute s debug =
 let rec execute s d env debug=
 	match s with
 	| x::xs -> 	let (s',d',env') = apply x xs d env debug in
 				execute s' d' env' debug
 	| []	-> 	match d with
-				| [CONST(y)]	-> printf "result : %d\n" y
-				| _				-> printf "error in execution\n"
-					
-
+				| [CONST(y)]	-> if debug then printf "returning %d" y;
+									y
+				| _				-> printf "error in exec"; exit 1
+in
+execute s [] [] debug
+;;
