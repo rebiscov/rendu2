@@ -369,13 +369,13 @@ let launch_inter prg debug =
 	   	debugger "applying second instruction of semi\n" prg2;
        interpreter prg2 env s
 
-    | Try(prg1, n, prg2) ->
+    | Try(prg1, prg2) ->
        let prg1' = interpreter prg1 env s in
-       let (b, m) = !exn in
-       if b && m = n then (* Si il y a eu une exception et que c'est la bonne... *)
+       let (b,m) = !exn in
+       if b then (* Si il y a eu une exception et que c'est la bonne... *)
          begin
            exn := (false, 0);
-           interpreter prg2 env s
+           interpreter (App(prg2, Value(m))) env s
          end
        else
          prg1'
