@@ -4,14 +4,12 @@ open Printf
 open Utils
 open Sedc
 
-let clots = Hashtbl.create 1000;; (* contient les clotures des fonctions *)
-let env: (ident, prog) Hashtbl.t = Hashtbl.create 1000;; (* environement contenant les variables, les fonctions *)
-let exn = ref (false, 0);;
+let env: (string, prog) Hashtbl.t = Hashtbl.create 1000;; (* environement contenant les variables, les fonctions *)
+let exn = ref (false, 0);;  (* reference utilisee pour les exceptions *)
   
 let make_cloture prg env funname debug = (* Fonction qui construit la cloture d'une fonction *)
   let vars = Hashtbl.create 100 in
   let clot = Hashtbl.create 100 in
-  
   (* findvar nous donne le nom des arguments attendu par une fonction (prg), ces nom ne doivent pas etre ajoute a la cloture *) 
   let rec findvar prg =
     match prg with
@@ -63,8 +61,8 @@ let launch_inter prg debug =
   in 
   let rec interpreter prg env s=
     match prg with
-    | JIT(p1)	->
-       debugger "launching sedc for: \n" p1;
+    | JIT(p1)	->    (* ce token n'existe que si on est en mode interpreteur+sedc *)
+       debugger "launching sedc for: " p1;
        let s = compile p1 in
        let v = execute s debug in
        Value(v)
@@ -76,22 +74,18 @@ let launch_inter prg debug =
        Hashtbl.add env id (Clot(f,clot));
        let out = interpreter prg2 env s in
        Hashtbl.remove env id;
-
        debugger ("rem fun :"^id^" = ") f;
        out
        
-    | Let(name, Recfun(id, prg1), prg2) -> 
-       let f = Recfun(id, prg1) in
-       debugger ("Let: defining recfun "^name^" = ") f;
-       let clot = make_cloture f env name debug in
-       Hashtbl.add env name f;
-       Hashtbl.add clot name f;
-       Hashtbl.add clots name clot;
+    | Let(id, Recfun(x, prg1), prg2) -> 
+       let f = Recfun(x, prg1) in
+       debugger ("add recfun "^id^" = ") f;
+       let clot = make_cloture f env id debug in
+       Hashtbl.add clot id f;
+       Hashtbl.add env id (Clot(f,clot));
        let out = interpreter prg2 env s in
-       
-       debugger ("Let: removing recfun "^name^" = ") f;
-       Hashtbl.remove env name;
-       Hashtbl.remove clots name;
+       debugger ("rem recfun "^id^" = ") f;
+       Hashtbl.remove env id;
        out
 
     | Let(name, Ref(prg1), prg2) -> 
@@ -198,7 +192,8 @@ let launch_inter prg debug =
 		 	debugger ("computing "^id^" = ") p;
 	     	match p with (* et si cet id est une fonction, on change d'environement *)
             	| Clot(p',clot)	->	interpreter p' clot s
-            	| _ 			-> 	interpreter p env s
+            	| Refvalue(n) 			-> 	Value(!n)
+				| _				-> interpreter p env s
            	end
          else (* Si on ne connait id, on n'y touche pas *)
            	begin
@@ -218,20 +213,15 @@ let launch_inter prg debug =
                        
     | App(p1, p2) ->
 	   debugger "Applying ... with arg :" p2 ;
-	   push s (Clot(p2,env));
+	   push s (*(interpreter p2 env s) *) (Clot(p2,env));
        interpreter p1 env s
                    
     | Fun(id, prg') ->
        if not (empty s) then (* Si il y a des arguments dans la pile... *)
          begin
            let e = pop s in
-           if debug then
-             begin
-               Printf.printf "Pop value from stack: ";
-               print_prog e
-             end;
+		   debugger "popping value from stack" e;
            Hashtbl.add env id e;
-           
            let out = interpreter prg' env s in
            Hashtbl.remove env id;
            out
@@ -247,15 +237,15 @@ let launch_inter prg debug =
        if not (empty s) then
          begin
            let e = pop s in
-           if debug then
-             begin
-               Printf.printf "Pop value from stack: ";
-               print_prog e
-             end;
-           Hashtbl.add env id e;
-           let out = interpreter prg' env s in
-           Hashtbl.remove env id;
-           out
+		   match e with 
+		   	| (Clot(f,clot))->
+
+		   		debugger "poping value from stack " e;
+           		Hashtbl.add env id (interpreter f clot (new_stack()));
+           		let out = interpreter prg' env s in
+           		Hashtbl.remove env id;
+           		out
+			| _ -> failwith (" bizarre, il ne devrait pas yavoir autre chose qu'une cloture ici...")
          end
        else
          prg
@@ -354,7 +344,7 @@ let launch_inter prg debug =
                   exn := (true, n);
                   prg
                   
-
+	| Clot(x,clot)	-> failwith( "cloture?!")
     | _ -> print_prog prg; failwith("Not supported yet")
   in
   interpreter prg env (new_stack());;

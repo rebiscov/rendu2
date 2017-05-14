@@ -30,7 +30,6 @@ open Prog   (* ou on definit le type expression *)
 %nonassoc REF FUN
 
 
-%left SEMI
 /* exceptions */
 %nonassoc RAISE
 %nonassoc TRY
@@ -44,6 +43,7 @@ open Prog   (* ou on definit le type expression *)
 %nonassoc IN
 %nonassoc IDENT
 
+%left SEMI
 
 %nonassoc IF
 %nonassoc THEN

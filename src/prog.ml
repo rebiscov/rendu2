@@ -148,6 +148,9 @@ let rec print_prog' p =
 						print_prog' p2;
 						print_string ")";
 	| Raise(e)		-> printf "Raise(%d)" e
+	| Clot(p,t)		-> printf "Clot(";
+						print_prog' p;
+						printf ",...)";
 in
 print_prog' p;
 printf "\n";;
