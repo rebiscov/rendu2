@@ -1,4 +1,5 @@
 open Printf
+open Hashtbl
 ;;
 
 type ident = string
@@ -9,6 +10,7 @@ type prog =
    	(* just-in-time: token saying that this part of code can be executed by the sedc *)
    	| JIT of prog
 	(* function definition *)
+	| Clot of prog* (string,prog) Hashtbl.t
 	| Let of ident*prog*prog
 	| Fun of ident*prog
 	| Recfun of ident*prog

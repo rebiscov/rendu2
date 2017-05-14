@@ -69,19 +69,15 @@ let launch_inter prg debug =
        let v = execute s debug in
        Value(v)
        
-    | Let(name, Fun(id, prg1), prg2) -> 
-       let f = Fun(id,prg1) in
-       debugger ("Let: defining fun :"^name^" = ") f ;
-
-       let clot = make_cloture f env name debug in
-       Hashtbl.add env name f;
-       Hashtbl.add clots name clot;
+    | Let(id, Fun(x, prg1), prg2) -> 
+       let f = Fun(x,prg1) in
+       debugger ("add fun :"^id^ " = ") f ;
+       let clot = make_cloture f env id debug in
+       Hashtbl.add env id (Clot(f,clot));
        let out = interpreter prg2 env s in
-       Hashtbl.remove env name;
-       Hashtbl.remove clots name;
+       Hashtbl.remove env id;
 
-       debugger ("Let: removing function "^name^" = ") f;
-       
+       debugger ("rem fun :"^id^" = ") f;
        out
        
     | Let(name, Recfun(id, prg1), prg2) -> 
@@ -194,43 +190,21 @@ let launch_inter prg debug =
                           
     | Value(a) -> Value(a)
                 
-    | Id(ident) ->
+    | Id(id) ->
        begin
-         if Hashtbl.mem env ident then (* Si on connait l'id... *)
-           begin
-	     let p = Hashtbl.find env ident in
-             if debug then 
-	       begin
-		 Printf.printf "Id: changing id '%s' for prog: " ident;
-             	 print_prog p
-	       end;
-	     match p with (* et si cet id est une fonction, on change d'environement *)
-             | Fun(x,prg')->
-	        if Hashtbl.mem clots ident then
-                  let cloture = Hashtbl.find clots ident in
-                  interpreter (Fun(x,prg')) cloture s
-                else
-                  begin
-                    if debug then Printf.printf "Id: the key %s is not present in clots\n" ident;
-                    interpreter p env s
-                  end
-	     | Recfun(x,prg') ->
-	        if Hashtbl.mem clots ident then
-                  let cloture = Hashtbl.find clots ident in
-                  interpreter (Recfun(x,prg')) cloture s
-                else
-                  begin
-                    Printf.printf "Id: the key %s is not present in clots\n" ident;
-                    interpreter p env s
-                  end                
-		
-             | prg'' -> interpreter prg'' env s
-           end
+         if Hashtbl.mem env id then (* Si on connait l'id... *)
+           	begin
+	     	let p = Hashtbl.find env id in
+		 	debugger ("computing "^id^" = ") p;
+	     	match p with (* et si cet id est une fonction, on change d'environement *)
+            	| Clot(p',clot)	->	interpreter p' clot s
+            	| _ 			-> 	interpreter p env s
+           	end
          else (* Si on ne connait id, on n'y touche pas *)
-           begin
-             if debug then Printf.printf "Id: warning: var not found %s\n" ident ;
-             prg
-           end
+           	begin
+		   		debugger ("var not found "^id) Unit;
+				prg
+           	end
        end
        
     | App(Print, x) -> let prg' = interpreter x env s in (* Utile seulement pour Print, print est considéré comme une fonction *)
@@ -242,15 +216,10 @@ let launch_inter prg debug =
 
                        end
                        
-    | App(x, p) ->
-       let p_clean = interpreter p env (new_stack()) in
-       if debug then (* On applique une fonction, on met les arguments dans la pile *)
-         begin 
-           Printf.printf "App: pushing in the queue: ";
-           print_prog p_clean
-         end ;
-       push s p_clean;
-       interpreter x env s
+    | App(p1, p2) ->
+	   debugger "Applying ... with arg :" p2 ;
+	   push s (Clot(p2,env));
+       interpreter p1 env s
                    
     | Fun(id, prg') ->
        if not (empty s) then (* Si il y a des arguments dans la pile... *)
@@ -381,8 +350,7 @@ let launch_inter prg debug =
          prg1'
 
 
-    | Raise(n) -> if debug then
-                    Printf.printf "Raise: raising exception '%d'\n" n;
+    | Raise(n) -> debugger "raise excep" (Raise(n));
                   exn := (true, n);
                   prg
                   

@@ -39,7 +39,9 @@ let main () =
 
 	if !sedc then 
 			begin
+			print_prog p;
 			let p' = prepare_jit p in    (* we prepare it*)
+			print_prog p';
 			let result = launch_inter p' (!debug) in
 			print_string "result of the interpreter: \n";
 			print_prog result;
