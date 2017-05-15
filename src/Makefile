@@ -1,6 +1,7 @@
 all:
 	ocamlbuild -yaccflag -v -lib unix main.native
 	mv main.native fouine
+	cp fouine ./examples
 
 vincent:
 	ocamlopt prog.ml
