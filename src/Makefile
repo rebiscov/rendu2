@@ -13,6 +13,7 @@ vincent:
 clean:
 	rm -R _build
 	rm fouine
+	rm examples/fouine
 
 clean_v:
 	rm *.cm*
