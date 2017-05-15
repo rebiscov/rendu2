@@ -23,21 +23,25 @@ let make_cloture prg env funname debug = (* Fonction qui construit la cloture d'
 	pas ses variables libres d'ou l'appel de findvar d'abord *)
   let rec findid prg =
     match prg with
-    | Id(id) | Bang(id)->
-       if debug then Printf.printf "  MC: treating %s..." id;
+    | Id(id) | Bang(id)  ->
+       if debug then Printf.printf " adding  %s to clot" id;
        if not (Hashtbl.mem vars id) then
          begin
            let v = Hashtbl.find env id in
            Hashtbl.add clot id v;
-           if debug then Printf.printf "  %s added successfully !\n" id;
          end
        else
-         if debug then Printf.printf "  %s was not added: it is one of the arguments\n" id
-       
-    | Let(_,prg1,prg2) | Plus(prg1,prg2) | Minus(prg1,prg2) | Mult(prg1,prg2) | App(prg1,prg2) | Eq(prg1, prg2) | Neq(prg1, prg2) | Smaller(prg1, prg2) | Smalleq(prg1, prg2) | Greater(prg1, prg2) | Greateq(prg1, prg2) | Semi(prg1, prg2) -> 
+         if debug then Printf.printf "  %s was not added: it is one of the arguments\n" id   
+   	| Reassign(id,p1) ->
+		if not (Hashtbl.mem vars id) then
+			let v = Hashtbl.find env id in
+			Hashtbl.add clot id v;
+		else
+			()
+	| Let(_,prg1,prg2) | Plus(prg1,prg2) | Minus(prg1,prg2) | Mult(prg1,prg2) | App(prg1,prg2) | Eq(prg1, prg2) | Neq(prg1, prg2) | Smaller(prg1, prg2) | Smalleq(prg1, prg2) | Greater(prg1, prg2) | Greateq(prg1, prg2) | Semi(prg1, prg2) -> 
        findid prg1;
        findid prg2
-    | Fun(_,prg1) | Recfun(_, prg1) | Ref(prg1) | Reassign(_, prg1) -> 
+    | Fun(_,prg1) | Recfun(_, prg1) | Ref(prg1)  -> 
        findid prg1
     | Value(_) | Print  -> ()
     | If(prg1, prg2, prg3) ->
@@ -62,11 +66,54 @@ let launch_inter prg debug =
   let rec interpreter prg env s=
     match prg with
     | JIT(p1)	->    (* ce token n'existe que si on est en mode interpreteur+sedc *)
-       debugger "launching sedc for: " p1;
+       printf "launching sedc for: "; print_prog p1;
        let s = compile p1 in
        let v = execute s debug in
        Value(v)
-       
+    | Let(id, p1, p2)	->
+		begin
+		match p1 with
+			| Fun(x,_)	-> 	let clot = make_cloture p1 env id debug in
+       						debugger ("add fun : "^id^ " = ") p1 ;
+							Hashtbl.add env id (Clot(p1,clot));
+       						let out = interpreter p2 env s in
+       						Hashtbl.remove env id;
+       						debugger ("rem fun : "^id^" = ") p1;
+       						out
+			| Recfun(x,_)->	
+      				 		debugger ("add rec : "^id^" = ") p1;
+       						let clot = make_cloture p1 env id debug in
+       						Hashtbl.add clot id (Clot(p1,clot));
+       						Hashtbl.add env id (Clot(p1,clot));
+       						let out = interpreter p2 env s in
+       						debugger ("rem rec : "^id^" = ") p1;
+       						Hashtbl.remove env id;
+       						out
+			| Ref(p1'')	->	begin
+							match p1'' with
+								| Value(x) -> 
+      				 			debugger ("add ref : "^id^" = ") p1;
+								Hashtbl.add env id (Refvalue(ref x));
+								let out = interpreter p2 env s in
+								Hashtbl.remove env id;
+       							debugger ("rem ref : "^id^" = ") p1;
+								out
+								| _ -> print_prog p1; exit 1
+							end
+			| _			-> begin
+							let p1' = interpreter p1 env (new_stack())in
+							match p1' with
+							| Value(n)->
+							Hashtbl.add env id p1';
+      				 		debugger ("add var : "^id^" = ") p1';
+							let out = interpreter p2 env s in
+							Hashtbl.remove env id;
+       						debugger ("rem var : "^id^" = ") p1';
+							out
+							| _ -> failwith ("what is that???")
+							end
+		end
+(*
     | Let(id, Fun(x, prg1), prg2) -> 
        let f = Fun(x,prg1) in
        debugger ("add fun :"^id^ " = ") f ;
@@ -106,7 +153,6 @@ let launch_inter prg debug =
        Hashtbl.remove env name;
 
        out
-
     | Let(name, prg1, prg2) -> 
        debugger ("Let: defining var : "^name^" = ") prg1;
        let prg1' = interpreter prg1 env s in
@@ -115,18 +161,21 @@ let launch_inter prg debug =
        Hashtbl.remove env name;
        debugger ("Let: deleting var "^name^" = ") prg1;
        prg2'
-
+*)
     | Ref(prg') ->
        Ref(interpreter prg' env s)
        
-    | Bang(ident) ->
-       if debug then Printf.printf "Bang '%s':" ident;
-       let r = Hashtbl.find env ident in
-       begin
-         match r with
-         | Refvalue(refe) -> Value(!refe)
-         | _ -> failwith("Not a Refvalue")
-       end
+    | Bang(id) ->
+       	debugger ("Bang "^id^" : ") Unit;
+	   	begin
+			if Hashtbl.mem env id then
+       			let r = Hashtbl.find env id in
+         		match r with
+         		| Refvalue(refe) -> Value(!refe)
+         		| _ -> failwith("Not a Refvalue")
+			else
+				failwith("Refvalue not found")
+       	end
 
     | Reassign(ident, prg') ->
        if debug then Printf.printf "Reassign:";
@@ -138,7 +187,7 @@ let launch_inter prg debug =
            | _ -> failwith("Not a value")
          end
        in
-       
+      	if Hashtbl.mem env ident then 
        let r = Hashtbl.find env ident in
        begin
          match r with
@@ -147,10 +196,12 @@ let launch_inter prg debug =
             Value(n)
          | _ -> failwith("not a ref value stored")
        end
+	   else
+	   	failwith("reassing var not found")
          
-       
-    | Plus(prg1, prg2) -> let prg1' = interpreter prg1 env s in
-                          let prg2' = interpreter prg2 env s in
+    (* for Plus, Minus, Mult, we compute first prg2 then prg1 like caml *)   
+    | Plus(prg1, prg2) -> 	let prg2' = interpreter prg2 env s in
+							let prg1' = interpreter prg1 env s in
                           begin
                             match (prg1', prg2') with
                             | (Value(a), Value(b)) -> if debug then Printf.printf "Adding %d and %d\n" a b;
@@ -160,9 +211,9 @@ let launch_inter prg debug =
                                (Plus(prg1', prg2'))
                           end
 
-    | Minus(prg1, prg2) -> let prg1' = interpreter prg1 env s in
-                           let prg2' = interpreter prg2 env s in
-                           begin
+    | Minus(prg1, prg2) -> let prg2' = interpreter prg2 env s in
+                           let prg1' = interpreter prg1 env s in
+						   begin
                              match (prg1', prg2') with
                              | (Value(a), Value(b)) -> if debug then Printf.printf "Substracting %d and %d\n" a b;
                                                        Value(a-b)
@@ -171,8 +222,8 @@ let launch_inter prg debug =
                                (Minus(prg1', prg2'))
                            end                                                          
                            
-    | Mult(prg1, prg2) -> let prg1' = interpreter prg1 env s in
-                          let prg2' = interpreter prg2 env s in
+    | Mult(prg1, prg2) -> let prg2' = interpreter prg2 env s in
+                          let prg1' = interpreter prg1 env s in
                           begin
                             match (prg1', prg2') with
                             | (Value(a), Value(b)) -> if debug then Printf.printf "Multiplicating %d and %d\n" a b;
@@ -192,28 +243,30 @@ let launch_inter prg debug =
 		 	debugger ("computing "^id^" = ") p;
 	     	match p with (* et si cet id est une fonction, on change d'environement *)
             	| Clot(p',clot)	->	interpreter p' clot s
-            	| Refvalue(n) 			-> 	Value(!n)
-				| _				-> interpreter p env s
+      			| Refvalue(n)	-> p
+				| Value(n)		-> p
+				| _ 			-> print_prog p;failwith ("err quest ce que ca peut bien etre...")
            	end
          else (* Si on ne connait id, on n'y touche pas *)
            	begin
 		   		debugger ("var not found "^id) Unit;
-				prg
+				failwith("var not found "^id);
            	end
        end
        
     | App(Print, x) -> let prg' = interpreter x env s in (* Utile seulement pour Print, print est considéré comme une fonction *)
                        begin
                          match prg' with
-                         | Value(a) -> Printf.printf "prInt %d\n" a;
+                         | Value(a) -> Printf.printf "(inter) prInt : %d\n" a;
                                        prg'
                          | _ -> Printf.printf "Print: not a value to print"; exit 1
 
                        end
                        
     | App(p1, p2) ->
-	   debugger "Applying ... with arg :" p2 ;
-	   push s (*(interpreter p2 env s) *) (Clot(p2,env));
+	   debugger "app " p1 ;
+	   debugger "with " p2;
+	   push s (Clot(p2,env));
        interpreter p1 env s
                    
     | Fun(id, prg') ->
@@ -344,7 +397,7 @@ let launch_inter prg debug =
                   exn := (true, n);
                   prg
                   
-	| Clot(x,clot)	-> failwith( "cloture?!")
+	| Clot(p1,clot)	-> interpreter p1 clot s
     | _ -> print_prog prg; failwith("Not supported yet")
   in
   interpreter prg env (new_stack());;
