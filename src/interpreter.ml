@@ -269,11 +269,13 @@ let launch_inter prg debug =
 	   	debugger "with " p2;
 	   	begin
 	   	match p2 with
-		| Id(id)		-> push s (Clot(p2,env))	
+		| Id(id)		-> 
+						let p3 = Hashtbl.find env id in
+						push s p3
 	   	| Fun(id,p3) 
 	   	| Recfun(id,p3) -> push s (Clot(p2,env))
 	   	| _	-> let p2' = interpreter p2 env s in
-	   		   push s (p2')
+			   push s (p2')
 		end;
 		let out = interpreter p1 env s in
 		out
@@ -290,10 +292,6 @@ let launch_inter prg debug =
          end
        else
 	   	 failwith ("stack empty");
-         begin
-           let out = Fun(id,(interpreter prg' env s))in
-           out
-         end
 				
     | If(prg1, prg2, prg3) -> if debug then Printf.printf "If then else\n";
                               let prg1' = interpreter prg1 env s in
