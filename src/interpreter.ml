@@ -277,6 +277,7 @@ let launch_inter prg debug =
 		end;
 		let out = interpreter p1 env s in
 		out
+    | Recfun(id,prg')
     | Fun(id, prg') ->
        if not (empty s) then (* Si il y a des arguments dans la pile... *)
          begin
@@ -288,28 +289,11 @@ let launch_inter prg debug =
            out
          end
        else
+	   	 failwith ("stack empty");
          begin
            let out = Fun(id,(interpreter prg' env s))in
            out
          end
-       
-         
-    | Recfun(id,prg') ->
-       if not (empty s) then
-         begin
-           let e = pop s in
-		   match e with 
-		   	| (Clot(f,clot))->
-
-		   		debugger "poping value from stack " e;
-           		Hashtbl.add env id (interpreter f clot (new_stack()));
-           		let out = interpreter prg' env s in
-           		Hashtbl.remove env id;
-           		out
-			| _ -> failwith (" bizarre, il ne devrait pas yavoir autre chose qu'une cloture ici...")
-         end
-       else
-         prg
 				
     | If(prg1, prg2, prg3) -> if debug then Printf.printf "If then else\n";
                               let prg1' = interpreter prg1 env s in
