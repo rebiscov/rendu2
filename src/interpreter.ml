@@ -89,7 +89,8 @@ let launch_inter prg debug =
        						debugger ("rem rec : "^id^" = ") p1;
        						Hashtbl.remove env id;
        						out
-			| Ref(p1'')	->	begin
+			| Ref(p1')	->	begin
+							let p1'' = interpreter p1' env (new_stack()) in
 							match p1'' with
 								| Value(x) -> 
       				 			debugger ("add ref : "^id^" = ") p1;
@@ -264,11 +265,18 @@ let launch_inter prg debug =
                        end
                        
     | App(p1, p2) ->
-	   debugger "app " p1 ;
-	   debugger "with " p2;
-	   push s (Clot(p2,env));
-       interpreter p1 env s
-                   
+	   	debugger "app " p1 ;
+	   	debugger "with " p2;
+	   	begin
+	   	match p2 with
+		| Id(id)		-> push s (Clot(p2,env))	
+	   	| Fun(id,p3) 
+	   	| Recfun(id,p3) -> push s (Clot(p2,env))
+	   	| _	-> let p2' = interpreter p2 env s in
+	   		   push s (p2')
+		end;
+		let out = interpreter p1 env s in
+		out
     | Fun(id, prg') ->
        if not (empty s) then (* Si il y a des arguments dans la pile... *)
          begin
