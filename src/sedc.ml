@@ -64,7 +64,7 @@ let rec prepare_jit p env=
 	| Unit -> (p,false)
 	| JIT(p1)	-> (p,true)
 	| Let(id,p1,p2) -> 	let (p1',c1) = prepare_jit p1 env in
-					   	let (p2',c2) = prepare_jit p2 ((id,0)::env)in
+					   	let (p2',c2) = prepare_jit p2 ((if c1 then (id,0)::env else env))in
 					   	if c1 && c2 then
 					   		(Let(id,p1',p2'),true)
 						else if c1 then
@@ -73,6 +73,11 @@ let rec prepare_jit p env=
 							(Let(id,p1',JIT(p2')),false)
 						else
 							(Let(id,p1',p2'),false)
+	| App(Print,p1)	-> 	let (p1',c1) = prepare_jit p1 env in
+						if c1 then 
+							(App(Print,p1'),true)
+						else
+							(App(Print,p1'),false)
 	| Fun(id,p1)	-> 	let (p1',c1) = prepare_jit p1 env in
 						if c1 then
 							(Fun(id,JIT(p1')),false)
@@ -104,13 +109,62 @@ let rec prepare_jit p env=
 							(Semi(p1',JIT(p2')),false)
 						else
 							(Semi(p1',p2'),false)
+	| Ref(n)		->	(Ref(n),false)
+	| Bang(id)		->  (Bang(id),false)
+	| Reassign(id,p1)->	let (p1',c1) = prepare_jit p1 env in
+							(Reassign(id,if c1 then JIT(p1') else p1'),false)	
 	| Value(n)		->	(Value(n),true)
 	| Id(id)		-> let (b,_) = access id env in
 						if b then 
 							(Id(id),true)
 						else
 							(Id(id),false)
-	| _	-> raise (Failure "foo")
+	| Refvalue(n)	-> (Refvalue(n),false)
+	| Plus(p1,p2)	-> 	let (p1',c1) = prepare_jit p1 env in
+					   	let (p2',c2) = prepare_jit p2 env in
+						if c1 && c2 then
+							(Plus(p1',p2'),true)
+						else 
+							(Plus((if c1 then JIT(p1') else p1' ), (if c2 then JIT(p2') else p2')),false)
+	| Minus(p1,p2)	-> 	let (p1',c1) = prepare_jit p1 env in
+					   	let (p2',c2) = prepare_jit p2 env in
+						if c1 && c2 then
+							(Minus(p1',p2'),true)
+						else 
+							(Minus((if c1 then JIT(p1') else p1') ,( if c2 then JIT(p2') else p2')),false)
+	| Mult(p1,p2)	-> 	let (p1',c1) = prepare_jit p1 env in
+					   	let (p2',c2) = prepare_jit p2 env in
+						if c1 && c2 then
+							(Mult(p1',p2'),true)
+						else 
+							(Mult((if c1 then JIT(p1') else p1' ),( if c2 then JIT(p2') else p2')),false)
+	| Eq(p1,p2)		->  let (p1',c1) = prepare_jit p1 env in
+						let (p2',c2) = prepare_jit p2 env in
+						(Eq((if c1 then JIT(p1') else p1'),( if c2 then JIT(p2') else p2')),false)
+	| Neq(p1,p2)		->  let (p1',c1) = prepare_jit p1 env in
+						let (p2',c2) = prepare_jit p2 env in
+						(Neq((if c1 then JIT(p1') else p1'),( if c2 then JIT(p2') else p2')),false)
+	| Greater(p1,p2)		->  let (p1',c1) = prepare_jit p1 env in
+						let (p2',c2) = prepare_jit p2 env in
+						(Greater((if c1 then JIT(p1') else p1'), (if c2 then JIT(p2') else p2')),false)
+	| Smaller(p1,p2)		->  let (p1',c1) = prepare_jit p1 env in
+						let (p2',c2) = prepare_jit p2 env in
+						(Smaller((if c1 then JIT(p1') else p1'), (if c2 then JIT(p2') else p2')),false)
+	| Greateq(p1,p2)		->  let (p1',c1) = prepare_jit p1 env in
+						let (p2',c2) = prepare_jit p2 env in
+						(Greateq((if c1 then JIT(p1') else p1'),( if c2 then JIT(p2') else p2')),false)
+	| Smalleq(p1,p2)		->  let (p1',c1) = prepare_jit p1 env in
+						let (p2',c2) = prepare_jit p2 env in
+						(Smalleq((if c1 then JIT(p1') else p1'),( if c2 then JIT(p2') else p2')),false)
+	| App(p1,p2)	->	let (p1',c1) = prepare_jit p1 env in
+						let (p2',c2) = prepare_jit p2 env in
+						(App((if c1 then JIT(p1') else p1'),(if c2 then JIT(p2') else p2')),false)
+	| If(p1,p2,p3)	-> 	let (p1',c1) = prepare_jit p1 env in
+						let (p2',c2) = prepare_jit p2 env in
+						let (p3',c3) = prepare_jit p3 env in
+						(If((if c1 then JIT(p1') else p1'),(if c2 then JIT(p2') else p2'),( if c3 then JIT(p3') else p3')),false)
+	| Print			-> (Print,false)
+	| _ 	-> failwith ("non treated by sedc")
 in
 let (p',c) = prepare_jit p [] in
 if c then 
@@ -124,9 +178,9 @@ else
 (* ... *)
 let rec compile p = 
 	match p with
-	| Plus(p1,p2) 	-> (compile p1)@(compile p2)@[ADD];
-	| Minus(p1,p2) 	-> (compile p1)@(compile p2)@[MINUS];
-	| Mult(p1,p2) 	-> (compile p1)@(compile p2)@[MULT];
+	| Plus(p1,p2) 	-> (compile p2)@(compile p1)@[ADD];
+	| Minus(p1,p2) 	-> (compile p2)@(compile p1)@[MINUS];
+	| Mult(p1,p2) 	-> (compile p2)@(compile p1)@[MULT];
 	| App(Print,p1)	-> (compile p1)@[PRINT];
 	| Id(x)				-> [ACCESS(x)]
 	| Let(x,p1,p2)		-> (compile p1) @ [LET(x)] @ (compile p2) @ [ENDLET];
@@ -187,7 +241,7 @@ let apply x s d env debug =
 					begin
 					debugger "apply Print\n";
 					match d with
-					| CONST(a)::d' ->  	printf "prInt : %d\n" a ; 
+					| CONST(a)::d' ->  	printf "(sedc) prInt : %d\n" a ; 
 										(s,d,env)
 					| _ -> printf "wrong nb of args or wrong matching"; exit 1
 					end

@@ -1,0 +1,81 @@
+
+
+\documentclass{beamer}
+\usepackage[english]{babel}
+
+\usetheme{default}
+\usecolortheme{seahorse}
+\usefonttheme[onlylarge]{structurebold}
+\setbeamerfont*{frametitle}{size=\normalsize,series=\bfseries}
+\setbeamertemplate{navigation symbols}{}
+
+\usepackage[latin1]{inputenc}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+
+\definecolor{kugreen}{RGB}{25,93,25}
+
+%\logo{\includegraphics[width=2cm]{logo_ens}}
+%\useoutertheme{infolines} 
+
+\addtobeamertemplate{navigation symbols}{}{%
+	\setbeamercolor{footline}{fg = black}    
+    \usebeamerfont{footline}%
+	    
+    \usebeamercolor[fg]{footline}%
+    \hspace{1em}%
+    \insertframenumber/\inserttotalframenumber
+    \quad
+    
+    
+}
+
+\title{Proj II: la Fouine}
+\author{Vincent Rebiscoul \& Julien du Crest}
+\institute{ENS-Lyon}
+\date{9 April 2017}
+
+
+
+\begin{document}
+
+
+
+
+
+\frame{\titlepage \vspace{-0.5cm}
+}
+
+
+
+\frame{
+\frametitle{blabla}
+
+}
+
+\frame{
+\frametitle{La theorie du pigeon superstitieux}
+\begin{itemize}
+	\item Periode 1 (j - 2 mois) : interpretation des fonctions a la definition, pas besoin de cloture.
+\pause
+	\item Periode 2 (j - 1 mois) : Table de hachage contenant les clotures des fonctions
+\pause
+	\item Periode 3 (j - 2 jour): Lazy evaluation
+\pause
+	\item Periode 4 (j - 1 jour): Vers une interpretation correcte?
+\end{itemize}
+
+}
+
+\frame{
+\frametitle{Conclusion}
+\begin{itemize}
+\item Il qu'il reste a ameliorer: 
+recuperer toutes les erreurs trouvees par les TD-mens lors du test intensif (que nous n'avous pas fait nous meme) et les corriger. 
+\item Ce  qui pourrait etre ajoute:
+tout ce qu'il y a dans ocaml et qu'il n'y a pas ici.
+\end{itemize}
+}
+
+
+\end{document}
