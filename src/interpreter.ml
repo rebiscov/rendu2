@@ -279,18 +279,7 @@ let launch_inter prg debug =
 		end;
 		let out = interpreter p1 env s in
 		out
-    | Recfun(id,prg') ->
-       if not (empty s) then (* Si il y a des arguments dans la pile... *)
-         begin
-           let e = pop s in
-		   debugger "popping value from stack" e;
-           Hashtbl.add env id e;
-           let out = interpreter prg' env s in
-           Hashtbl.remove env id;
-           out
-         end
-       else
-	   	 	Recfun(id,prg')
+    | Recfun(id,prg')
     | Fun(id, prg') ->
        if not (empty s) then (* Si il y a des arguments dans la pile... *)
          begin
@@ -302,7 +291,7 @@ let launch_inter prg debug =
            out
          end
        else
-	   	 	Fun(id,prg')
+	   	 	failwith ("stack empty: cannot apply function")
 				
     | If(prg1, prg2, prg3) -> if debug then Printf.printf "If then else\n";
                               let prg1' = interpreter prg1 env s in
